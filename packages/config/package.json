@@ -1,0 +1,10 @@
+{
+  "name": "@bellwether/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "files": ["tsconfig.json"],
+  "exports": {
+    "./tsconfig.json": "./tsconfig.json"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@bellwether/scrapers",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsc -b --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "echo \"(lint: configure eslint in Phase 0)\"",
+    "test": "echo \"(no tests yet)\""
+  },
+  "dependencies": {
+    "@bellwether/core": "workspace:*",
+    "robots-parser": "^3.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.2"
+  }
+}

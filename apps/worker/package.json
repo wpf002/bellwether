@@ -1,0 +1,29 @@
+{
+  "name": "@bellwether/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "echo \"(lint: configure eslint in Phase 0)\"",
+    "test": "echo \"(no tests yet)\""
+  },
+  "dependencies": {
+    "@bellwether/core": "workspace:*",
+    "@bellwether/db": "workspace:*",
+    "@bellwether/digest": "workspace:*",
+    "@bellwether/extract": "workspace:*",
+    "@bellwether/industries": "workspace:*",
+    "@bellwether/scrapers": "workspace:*",
+    "bullmq": "^5.21.2",
+    "ioredis": "^5.4.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2"
+  }
+}

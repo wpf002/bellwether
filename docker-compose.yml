@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bellwether-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bellwether
+      POSTGRES_PASSWORD: bellwether
+      POSTGRES_DB: bellwether
+    ports:
+      - "5432:5432"
+    volumes:
+      - bellwether_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bellwether"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: bellwether-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - bellwether_redisdata:/data
+    command: ["redis-server", "--appendonly", "yes"]
+
+volumes:
+  bellwether_pgdata:
+  bellwether_redisdata:
