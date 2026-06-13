@@ -70,10 +70,14 @@ Exit: at least a handful of buyers say yes (or tell you precisely what's off).
 
 Goal: prove the engine generalizes without per-industry code.
 
-- Harden the pack abstraction (sources, entity kinds, KPIs, prompts).
-- Add a second vertical (e-commerce retail) using only a new pack.
+- [x] Add a second vertical (e-commerce retail) as a pack only — shipped with
+      ZERO engine changes (only the industries package + registry line). Live
+      proof: same pipeline → 30 signals (events + sentiment) for `ecommerce`.
+- [x] Pack-validation on boot (registry parses every pack; tested).
+- [ ] Harden the pack abstraction against what Phase 1 actually needed.
+- [ ] KPI engine: implement the declarative aggregations (count, share_of_voice…).
+- [ ] Pack versioning persisted in the `industries` table.
 - Measure: adding a third vertical should take **days, not weeks**.
-- Pack-validation on boot; pack versioning in the `industries` table.
 
 Exit: vertical #2 ships with zero engine changes; vertical #3 is a day of work.
 

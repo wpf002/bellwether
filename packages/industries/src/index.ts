@@ -1,12 +1,13 @@
 import { parseIndustryPack, type IndustryPack } from "@bellwether/core";
 import { saasPack } from "./packs/saas.js";
+import { ecommercePack } from "./packs/ecommerce.js";
 
 /**
  * Industry registry. Each pack is validated at load time, so malformed config
  * fails fast on boot rather than mid-pipeline. Adding a vertical = add a pack
  * file + one line here. No engine changes (Phase 2 success criterion).
  */
-const rawPacks: IndustryPack[] = [saasPack];
+const rawPacks: IndustryPack[] = [saasPack, ecommercePack];
 
 export const industryPacks: Record<string, IndustryPack> = Object.fromEntries(
   rawPacks.map((p) => [p.id, parseIndustryPack(p)]),
@@ -22,4 +23,4 @@ export function listIndustryPacks(): IndustryPack[] {
   return Object.values(industryPacks);
 }
 
-export { saasPack };
+export { saasPack, ecommercePack };
