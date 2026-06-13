@@ -4,7 +4,7 @@ import type { SourceAdapter } from "./source-adapter.js";
 export { SourceAdapter } from "./source-adapter.js";
 export type { FetchContext } from "./source-adapter.js";
 export { isAllowed } from "./robots.js";
-export { RssNewsAdapter } from "./adapters/rss-news.js";
+export { RssNewsAdapter, parseRssItems } from "./adapters/rss-news.js";
 
 /** Adapter registry. Industry packs reference adapters by id. */
 export const adapterRegistry: Record<string, SourceAdapter> = {

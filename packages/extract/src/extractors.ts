@@ -1,4 +1,5 @@
-import { z } from "zod";
+import { z } from "zod/v4";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { ExtractionPrompt } from "@bellwether/core";
 import { getAnthropic, extractModel } from "./client.js";
 
@@ -13,38 +14,42 @@ import { getAnthropic, extractModel } from "./client.js";
 
 const STRUCTURED_ONLY_GUARDRAIL = [
   "You are a data extraction function, not an analyst.",
-  "Return ONLY valid JSON matching the requested shape. No prose, no markdown fences.",
-  "Do NOT score, rank, rate, predict, or express opinions. Extract what is stated.",
-  "If a field is not present in the text, use null. Never invent values.",
+  "Do NOT score, rank, rate, predict, or express opinions. Extract only what is stated in the text.",
+  "If a field is not present in the text, use null (or an empty array). Never invent values.",
 ].join(" ");
 
-export interface ExtractInput {
+export interface ExtractInput<S extends z.ZodType = z.ZodType> {
   prompt: ExtractionPrompt;
   /** The raw text to extract from (already de-HTML'd upstream where relevant). */
   text: string;
   /** Zod schema describing the expected structured output. */
-  schema: z.ZodTypeAny;
+  schema: S;
 }
 
-export async function extractStructured<T>(input: ExtractInput): Promise<T> {
+/**
+ * Turns unstructured text into a typed object using structured outputs: the
+ * model is constrained to the provided schema server-side, and the SDK validates
+ * the response before returning it. The LLM's job — extract, never decide — is
+ * enforced by both the guardrail prompt and the schema.
+ *
+ * Throws if the model returns no parseable output (e.g. a safety refusal), so a
+ * caller never persists an unvalidated "signal".
+ */
+export async function extractStructured<S extends z.ZodType>(
+  input: ExtractInput<S>,
+): Promise<z.infer<S>> {
   const client = getAnthropic();
-  const res = await client.messages.create({
+  const message = await client.messages.parse({
     model: extractModel(),
-    max_tokens: 1024,
+    max_tokens: 2048,
     system: `${STRUCTURED_ONLY_GUARDRAIL}\n\n${input.prompt.system}`,
     messages: [{ role: "user", content: input.text }],
+    output_config: { format: zodOutputFormat(input.schema) },
   });
 
-  const block = res.content.find((b) => b.type === "text");
-  const jsonText = block && block.type === "text" ? block.text : "";
-  const cleaned = jsonText.replace(/```json|```/g, "").trim();
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(cleaned);
-  } catch {
-    throw new Error("extractStructured: model did not return valid JSON");
+  if (message.parsed_output == null) {
+    const reason = message.stop_reason === "refusal" ? "safety refusal" : "no parseable output";
+    throw new Error(`extractStructured: model returned ${reason}`);
   }
-  // Validate against the caller's schema — extraction is only trusted if typed.
-  return input.schema.parse(parsed) as T;
+  return message.parsed_output as z.infer<S>;
 }

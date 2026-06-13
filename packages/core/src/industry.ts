@@ -24,6 +24,13 @@ export const SourceDef = z.object({
   rateLimitMs: z.number().int().positive().optional(),
   /** If true, this source may contain personal data — handle per COMPLIANCE. */
   mayContainPersonalData: z.boolean().default(false),
+  /**
+   * Which entity kinds to extract from this source's records. Lets a source
+   * scope extraction declaratively — a news feed → market_event/company, a
+   * forum feed → sentiment_theme — without per-industry code. Defaults to the
+   * pack's full `entityKinds` when omitted.
+   */
+  extractAs: z.array(z.enum(["company", "sentiment_theme", "market_event"])).optional(),
 });
 export type SourceDef = z.infer<typeof SourceDef>;
 

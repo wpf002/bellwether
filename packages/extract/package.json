@@ -16,15 +16,16 @@
     "dev": "tsc -b --watch",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "echo \"(no tests yet)\""
+    "test": "vitest run"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.32.1",
+    "@anthropic-ai/sdk": "^0.104.1",
     "@bellwether/core": "workspace:*",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^22.7.4",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.2"
   }
 }

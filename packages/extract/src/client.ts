@@ -9,5 +9,9 @@ export function getAnthropic(): Anthropic {
 }
 
 export function extractModel(): string {
-  return process.env.EXTRACT_MODEL ?? "claude-sonnet-4-20250514";
+  // Default to the most capable model. Extraction is high-volume and runs once
+  // per (raw record × entity kind), so a cheaper model (e.g. claude-haiku-4-5)
+  // is a reasonable cost lever for this structured-only workload — set
+  // EXTRACT_MODEL to override.
+  return process.env.EXTRACT_MODEL ?? "claude-opus-4-8";
 }

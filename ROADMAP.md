@@ -46,9 +46,11 @@ CI green.
 
 Goal: prove the output is worth paying for, in ONE vertical (SaaS), with NO UI.
 
-- Curate ~10–15 real sources for the SaaS pack (competitor pricing pages,
-  TOS-permitted review-site routes, relevant public RSS).
-- Implement the three worker processors: scrape → extract → digest.
+- [x] Curate ~14 real, TOS-permitted sources for the SaaS pack (RSS/Atom: news,
+  first-party company blogs, one public subreddit). `extractAs` scopes each.
+- [x] Implement the three worker processors: scrape → extract → digest, plus
+  structured-output extraction and the initial DB migration.
+- [ ] Run the pipeline live (real API key + feeds) and confirm digest quality.
 - Produce a real weekly digest answering: who are the key players, what changed,
   what are buyers complaining about — every claim cited to source records.
 - Deliver it as a formatted PDF/email. No dashboard yet.
