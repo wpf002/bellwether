@@ -7,12 +7,18 @@ import { scrapeQueue, digestQueue, connection } from "./queues.js";
  * worker. (Wiring this to a BullMQ repeatable job is a small follow-up; for now
  * it's invoked on demand / by an external scheduler.)
  */
-export async function enqueuePackScrapes(industryId: string): Promise<number> {
+export async function enqueuePackScrapes(
+  industryId: string,
+  sourceIds?: string[],
+): Promise<number> {
   const pack = getIndustryPack(industryId);
-  for (const source of pack.sources) {
+  const sources = sourceIds?.length
+    ? pack.sources.filter((s) => sourceIds.includes(s.id))
+    : pack.sources;
+  for (const source of sources) {
     await scrapeQueue.add("scrape", { industryId: pack.id, sourceId: source.id });
   }
-  return pack.sources.length;
+  return sources.length;
 }
 
 /**
@@ -33,7 +39,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const [command, industryId, start, end] = process.argv.slice(2);
   const run = async () => {
     if (command === "scrape" && industryId) {
-      const n = await enqueuePackScrapes(industryId);
+      const sourceIds = process.argv.slice(4); // scrape <industryId> [sourceId...]
+      const n = await enqueuePackScrapes(industryId, sourceIds);
       console.log(`Enqueued ${n} scrape jobs for "${industryId}".`);
     } else if (command === "digest" && industryId && start && end) {
       await enqueueDigest(industryId, start, end);

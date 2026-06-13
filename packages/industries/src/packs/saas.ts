@@ -15,10 +15,10 @@ import type { IndustryPack } from "@bellwether/core";
  *  - `extractAs` scopes each source to the entity kinds it can credibly yield:
  *    news/aggregators → market_event; first-party company blogs → company +
  *    market_event (the post's own company, its launches/pricing moves); a
- *    public subreddit feed → sentiment_theme (buyer complaints/praise).
- *  - The subreddit feed is flagged `mayContainPersonalData` (posts carry
- *    usernames). Per COMPLIANCE we extract only themes/polarity from it and
- *    store no individual-level data; revisit before adding more social sources.
+ *    public Hacker News discussion feed → sentiment_theme (buyer praise/gripes).
+ *  - The HN feed is flagged `mayContainPersonalData` (posts carry usernames).
+ *    Per COMPLIANCE we extract only themes/polarity from it and store no
+ *    individual-level data; revisit before adding more social sources.
  */
 export const saasPack: IndustryPack = {
   id: "saas",
@@ -147,12 +147,16 @@ export const saasPack: IndustryPack = {
       extractAs: ["company", "market_event"],
     },
     // --- Public community sentiment → buyer complaints/praise ---
+    // Reddit and Lobsters both disallow our bot in robots.txt (verified), and the
+    // base adapter fails closed. hnrss.org (a Hacker News RSS service) permits
+    // us, so HN discussion is the Phase 1 sentiment source. Stronger buyer-review
+    // sources (G2/Capterra) need a Phase 2 HTML adapter + TOS review.
     {
-      id: "saas-reddit-saas",
-      label: "r/SaaS (public feed)",
+      id: "saas-hn-discussion",
+      label: "Hacker News — SaaS discussion",
       kind: "social_public",
       adapter: "rss-news",
-      url: "https://www.reddit.com/r/SaaS/.rss",
+      url: "https://hnrss.org/newest?q=SaaS&points=10",
       mayContainPersonalData: true,
       extractAs: ["sentiment_theme"],
     },

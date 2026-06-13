@@ -47,13 +47,14 @@ CI green.
 Goal: prove the output is worth paying for, in ONE vertical (SaaS), with NO UI.
 
 - [x] Curate ~14 real, TOS-permitted sources for the SaaS pack (RSS/Atom: news,
-  first-party company blogs, one public subreddit). `extractAs` scopes each.
+      first-party company blogs, one Hacker News discussion feed). `extractAs`
+      scopes each. (Reddit/Lobsters disallow our bot; deferred review sites.)
 - [x] Implement the three worker processors: scrape → extract → digest, plus
-  structured-output extraction and the initial DB migration.
-- [ ] Run the pipeline live (real API key + feeds) and confirm digest quality.
-- Produce a real weekly digest answering: who are the key players, what changed,
-  what are buyers complaining about — every claim cited to source records.
-- Deliver it as a formatted PDF/email. No dashboard yet.
+      structured-output extraction and the initial DB migration.
+- [x] Run the pipeline live (real API key + feeds): Stripe → 20 cited signals →
+      digest → PDF, provenance verified end to end.
+- [x] Render the weekly digest to a cited PDF (`pdfkit`).
+- [ ] Email delivery (needs SMTP), weekly cron, accuracy spot-check harness.
 - **Validation gate:** put it in front of 5–10 potential buyers. The question is
   "would you pay $X for this every week?" If no, the data/framing/industry is
   wrong — fix that before building infrastructure.
