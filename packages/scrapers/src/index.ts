@@ -5,6 +5,8 @@ export { SourceAdapter } from "./source-adapter.js";
 export type { FetchContext } from "./source-adapter.js";
 export { isAllowed } from "./robots.js";
 export { RssNewsAdapter, parseRssItems } from "./adapters/rss-news.js";
+export { fetchTextWithRetry, ScrapeError } from "./fetch.js";
+export type { RetryConfig } from "./fetch.js";
 
 /** Adapter registry. Industry packs reference adapters by id. */
 export const adapterRegistry: Record<string, SourceAdapter> = {

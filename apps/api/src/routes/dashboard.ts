@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { getDb, sourceHealth } from "@bellwether/db";
 import { getIndustryPack } from "@bellwether/industries";
 import { companiesView, digestForWindow, eventsFeed, overview } from "../data.js";
 
@@ -52,4 +53,10 @@ export async function dashboardRoutes(app: FastifyInstance) {
       return companiesView(req.params.id, DAYS(req.query));
     },
   );
+
+  // Source health & freshness (Phase 4 monitoring surface).
+  app.get<{ Params: { id: string } }>("/industries/:id/sources", async (req, reply) => {
+    if (!guard(req.params.id, reply)) return;
+    return sourceHealth(getDb(), req.params.id);
+  });
 }

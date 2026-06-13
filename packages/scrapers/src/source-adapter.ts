@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { RawRecord, SourceDef } from "@bellwether/core";
 import { isAllowed } from "./robots.js";
+import { fetchTextWithRetry, ScrapeError } from "./fetch.js";
 
 export interface FetchContext {
   userAgent: string;
@@ -8,6 +9,8 @@ export interface FetchContext {
   /** Cap on records kept per fetch — keeps a weekly digest from ingesting a
    *  feed's full archive. Undefined = no cap. */
   maxItems?: number;
+  /** Transient-failure retry budget (network/429/5xx). Default 3. */
+  maxRetries?: number;
 }
 
 /**
@@ -27,14 +30,20 @@ export abstract class SourceAdapter {
   async fetch(source: SourceDef, ctx: FetchContext): Promise<RawRecord[]> {
     const allowed = await isAllowed(source.url, ctx.userAgent);
     if (!allowed) {
-      throw new Error(`robots.txt disallows fetching ${source.url} for ${ctx.userAgent}`);
+      throw new ScrapeError(
+        `robots.txt disallows fetching ${source.url} for ${ctx.userAgent}`,
+        403,
+        false,
+      );
     }
 
     await sleep(source.rateLimitMs ?? ctx.defaultRateLimitMs);
 
-    const res = await fetch(source.url, { headers: { "user-agent": ctx.userAgent } });
-    if (!res.ok) throw new Error(`fetch failed ${res.status} for ${source.url}`);
-    const body = await res.text();
+    const body = await fetchTextWithRetry(
+      source.url,
+      { headers: { "user-agent": ctx.userAgent } },
+      { maxRetries: ctx.maxRetries },
+    );
 
     const now = new Date().toISOString();
     const cap = source.maxItems ?? ctx.maxItems; // per-source override wins

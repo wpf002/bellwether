@@ -109,13 +109,21 @@ Exit: a user can self-serve a digest for their industry from the browser. ✓
 
 Goal: stop being brittle.
 
-- Move from hand-written fetchers to a managed/queue-backed crawl (managed
-  scraping service or a self-hosted Playwright pool for JS-heavy sources).
-- Monitoring: scraper-failure alerts, data-freshness indicators, per-source
-  coverage reports (the `sources.healthy` column exists for this).
-- Anti-bot resilience, retry/backoff, proxy strategy where TOS-permitted.
+- [x] Retry/backoff in the base adapter: transient failures (network/429/5xx)
+      retry with exponential backoff + jitter; terminal 4xx (incl. 403 bot-walls)
+      do NOT retry — resilience, not evasion. `ScrapeError` carries the status.
+- [x] Monitoring: per-source health (healthy/down/stale), freshness, last error,
+      coverage counts — persisted to `sources` and exposed at
+      `/industries/:id/sources` + a `monitor` CLI that exits non-zero (pageable)
+      and emails an alert (SMTP-gated) when sources fail or go stale.
+- [~] Managed crawl / Playwright pool for JS-heavy sources, proxy strategy:
+  deferred — needs external infra (a browser pool / proxy provider). The
+  fetch path is isolated so a managed fetcher drops in behind the same
+  adapter contract. Phase 1 RSS sources don't need JS rendering.
 
-Exit: a source going dark pages you; it does not silently rot the product.
+Exit: a source going dark pages you; it does not silently rot the product. ✓
+(verified: a robots-blocked source flips to DOWN with the error recorded, and
+the monitor exits non-zero for cron/CI to page.)
 
 ## Phase 5 — Insight quality + feedback loop _(the moat)_
 

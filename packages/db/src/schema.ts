@@ -26,7 +26,12 @@ export const sources = pgTable(
     adapter: text("adapter").notNull(),
     url: text("url").notNull(),
     lastFetchedAt: timestamp("last_fetched_at", { withTimezone: true }),
-    healthy: integer("healthy").notNull().default(1), // freshness/monitoring (Phase 4)
+    // Phase 4: health & freshness monitoring.
+    healthy: integer("healthy").notNull().default(1), // 1 = ok, 0 = failing
+    lastSuccessAt: timestamp("last_success_at", { withTimezone: true }),
+    lastError: text("last_error"),
+    lastStatus: integer("last_status"), // HTTP status of the last attempt
+    consecutiveFailures: integer("consecutive_failures").notNull().default(0),
   },
   (t) => ({ byIndustry: index("sources_industry_idx").on(t.industryId) }),
 );
