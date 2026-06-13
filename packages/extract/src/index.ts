@@ -3,6 +3,7 @@ export { extractStructured } from "./extractors.js";
 export type { ExtractInput } from "./extractors.js";
 export {
   extractionSchemas,
+  isExtractionEmpty,
   CompanyExtraction,
   SentimentExtraction,
   MarketEventExtraction,

@@ -19,7 +19,10 @@ import type { EntityKind } from "@bellwether/core";
  */
 
 export const CompanyExtraction = z.object({
-  name: z.string(),
+  // Nullable so the model can decline when the text names no real company
+  // (a product, feature, or event is not a company). Empty extractions are
+  // dropped by `isExtractionEmpty` rather than persisted as junk signals.
+  name: z.string().nullable(),
   domain: z.string().nullable(),
   positioning: z.string().nullable(),
   pricingTiers: z
@@ -64,3 +67,23 @@ export const extractionSchemas: Record<EntityKind, z.ZodType> = {
   sentiment_theme: SentimentExtraction,
   market_event: MarketEventExtraction,
 };
+
+/**
+ * Whether an extraction yielded nothing worth persisting — the model declined
+ * because the text had no entity of this kind. Centralizes the per-kind
+ * "required field" knowledge here (alongside the schemas) so the worker's
+ * extract step stays generic. A null/blank key field means "no signal".
+ */
+export function isExtractionEmpty(kind: EntityKind, payload: Record<string, unknown>): boolean {
+  const blank = (v: unknown) => typeof v !== "string" || v.trim() === "";
+  switch (kind) {
+    case "company":
+      return blank(payload.name);
+    case "sentiment_theme":
+      return blank(payload.theme);
+    case "market_event":
+      return blank(payload.headline);
+    default:
+      return false;
+  }
+}

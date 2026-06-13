@@ -188,7 +188,7 @@ export const saasPack: IndustryPack = {
       id: "saas-company",
       entityKind: "company",
       system:
-        "Extract a software company's name, domain, one-sentence positioning, listed pricing tiers, and named features from the provided text. JSON keys: name, domain, positioning, pricingTiers[], features[].",
+        "Extract a SOFTWARE COMPANY/VENDOR profile from the text. A company is an organization that sells software — NOT a product, feature, event, conference, or funding round. If the text names no specific software company (e.g. it's about a product launch, an event recap, or a general topic), set name to null and leave the other fields empty. Use the company's own name, not a product's. JSON keys: name (string|null), domain, positioning, pricingTiers[], features[].",
     },
     {
       id: "saas-sentiment",

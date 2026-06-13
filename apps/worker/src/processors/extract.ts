@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@bellwether/db";
 import { getIndustryPack } from "@bellwether/industries";
-import { extractStructured, extractionSchemas } from "@bellwether/extract";
+import { extractStructured, extractionSchemas, isExtractionEmpty } from "@bellwether/extract";
 import type { ExtractJob } from "../queues.js";
 import { toPlainText } from "./text.js";
 import { buildExtractedSignal } from "./signal.js";
@@ -50,6 +50,9 @@ export async function processExtract(job: ExtractJob): Promise<void> {
       );
       continue;
     }
+
+    // The model declined — no entity of this kind in the record. Don't persist junk.
+    if (isExtractionEmpty(kind, payload)) continue;
 
     const signal = await buildExtractedSignal({
       id: randomUUID(),

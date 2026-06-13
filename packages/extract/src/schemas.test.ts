@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   extractionSchemas,
+  isExtractionEmpty,
   CompanyExtraction,
   SentimentExtraction,
   MarketEventExtraction,
@@ -59,5 +60,26 @@ describe("extraction schemas", () => {
 
   it("rejects an out-of-enum sentiment polarity", () => {
     expect(() => SentimentExtraction.parse({ theme: "pricing", polarity: "angry" })).toThrow();
+  });
+
+  it("accepts a null company name (model declined)", () => {
+    expect(
+      CompanyExtraction.parse({ name: null, domain: null, positioning: null }).name,
+    ).toBeNull();
+  });
+});
+
+describe("isExtractionEmpty", () => {
+  it("treats a null/blank company name as empty", () => {
+    expect(isExtractionEmpty("company", { name: null })).toBe(true);
+    expect(isExtractionEmpty("company", { name: "  " })).toBe(true);
+    expect(isExtractionEmpty("company", { name: "Stripe" })).toBe(false);
+  });
+
+  it("keys sentiment on theme and events on headline", () => {
+    expect(isExtractionEmpty("sentiment_theme", { theme: "" })).toBe(true);
+    expect(isExtractionEmpty("sentiment_theme", { theme: "pricing" })).toBe(false);
+    expect(isExtractionEmpty("market_event", { headline: null })).toBe(true);
+    expect(isExtractionEmpty("market_event", { headline: "Acme ships X" })).toBe(false);
   });
 });

@@ -56,9 +56,10 @@ Goal: prove the output is worth paying for, in ONE vertical (SaaS), with NO UI.
 - [x] Render the weekly digest to a cited PDF (`pdfkit`).
 - [x] Weekly cron (BullMQ job schedulers), accuracy spot-check harness, and
       email delivery (SMTP-config-gated; no-op with a notice if unconfigured).
-- [ ] **Quality note:** `company` extraction from first-party blogs is noisy
-      (the accuracy harness flagged events/products mis-tagged as companies);
-      tune prompts/sources before the buyer gate.
+- [x] Tightened `company` extraction (the accuracy harness had flagged
+      events/products mis-tagged as companies): prompt now declines non-company
+      text → null, and empty extractions are dropped. Re-audit: company signals
+      went from 10 noisy to 4 correct on the Stripe sample.
 - **Validation gate:** put it in front of 5–10 potential buyers. The question is
   "would you pay $X for this every week?" If no, the data/framing/industry is
   wrong — fix that before building infrastructure.
