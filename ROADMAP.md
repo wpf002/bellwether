@@ -54,7 +54,11 @@ Goal: prove the output is worth paying for, in ONE vertical (SaaS), with NO UI.
 - [x] Run the pipeline live (real API key + feeds): Stripe → 20 cited signals →
       digest → PDF, provenance verified end to end.
 - [x] Render the weekly digest to a cited PDF (`pdfkit`).
-- [ ] Email delivery (needs SMTP), weekly cron, accuracy spot-check harness.
+- [x] Weekly cron (BullMQ job schedulers), accuracy spot-check harness, and
+      email delivery (SMTP-config-gated; no-op with a notice if unconfigured).
+- [ ] **Quality note:** `company` extraction from first-party blogs is noisy
+      (the accuracy harness flagged events/products mis-tagged as companies);
+      tune prompts/sources before the buyer gate.
 - **Validation gate:** put it in front of 5–10 potential buyers. The question is
   "would you pay $X for this every week?" If no, the data/framing/industry is
   wrong — fix that before building infrastructure.

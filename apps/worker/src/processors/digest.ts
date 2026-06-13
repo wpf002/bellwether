@@ -15,8 +15,11 @@ import type { DigestJob } from "../queues.js";
 export async function processDigest(job: DigestJob): Promise<void> {
   const pack = getIndustryPack(job.industryId);
   const db = getDb();
-  const periodStart = new Date(job.periodStart);
-  const periodEnd = new Date(job.periodEnd);
+  // Explicit window if given; otherwise a rolling window ending now.
+  const periodEnd = job.periodEnd ? new Date(job.periodEnd) : new Date();
+  const periodStart = job.periodStart
+    ? new Date(job.periodStart)
+    : new Date(periodEnd.getTime() - (job.rollingDays ?? 7) * 24 * 60 * 60 * 1000);
 
   const rows = await db
     .select()
@@ -42,8 +45,8 @@ export async function processDigest(job: DigestJob): Promise<void> {
   const digest = buildWeeklyDigest({
     pack,
     signals,
-    periodStart: job.periodStart,
-    periodEnd: job.periodEnd,
+    periodStart: periodStart.toISOString(),
+    periodEnd: periodEnd.toISOString(),
   });
 
   await db.insert(schema.digests).values({
@@ -55,7 +58,7 @@ export async function processDigest(job: DigestJob): Promise<void> {
   });
 
   console.log(
-    `[digest] ${pack.id} ${job.periodStart}..${job.periodEnd}: ` +
+    `[digest] ${pack.id} ${periodStart.toISOString()}..${periodEnd.toISOString()}: ` +
       `${digest.keyPlayers.length} players, ${digest.whatChanged.length} events, ` +
       `${digest.buyerComplaints.length} complaints from ${signals.length} signals`,
   );

@@ -34,20 +34,47 @@ export async function enqueueDigest(
   await digestQueue.add("digest", { industryId: pack.id, periodStart, periodEnd });
 }
 
-// CLI: `node dist/scheduler.js scrape <industryId>` | `digest <industryId> <startISO> <endISO>`
+/**
+ * Registers weekly repeatable jobs (idempotent by scheduler id): a scrape per
+ * source on Monday 06:00, and a rolling-7-day digest on Monday 09:00 — after the
+ * scrape→extract fan-out has had time to settle. The worker processes them on
+ * schedule as long as it's running. Re-running this updates the schedule in place.
+ */
+export async function scheduleWeekly(industryId: string): Promise<void> {
+  const pack = getIndustryPack(industryId);
+  for (const source of pack.sources) {
+    await scrapeQueue.upsertJobScheduler(
+      `weekly-scrape-${pack.id}-${source.id}`,
+      { pattern: "0 6 * * 1" },
+      { name: "scrape", data: { industryId: pack.id, sourceId: source.id } },
+    );
+  }
+  await digestQueue.upsertJobScheduler(
+    `weekly-digest-${pack.id}`,
+    { pattern: "0 9 * * 1" },
+    { name: "digest", data: { industryId: pack.id, rollingDays: 7 } },
+  );
+}
+
+// CLI: scrape <industryId> [sourceId...] | digest <industryId> <startISO> <endISO> | schedule-weekly <industryId>
 if (import.meta.url === `file://${process.argv[1]}`) {
   const [command, industryId, start, end] = process.argv.slice(2);
   const run = async () => {
     if (command === "scrape" && industryId) {
-      const sourceIds = process.argv.slice(4); // scrape <industryId> [sourceId...]
+      const sourceIds = process.argv.slice(4);
       const n = await enqueuePackScrapes(industryId, sourceIds);
       console.log(`Enqueued ${n} scrape jobs for "${industryId}".`);
     } else if (command === "digest" && industryId && start && end) {
       await enqueueDigest(industryId, start, end);
       console.log(`Enqueued digest for "${industryId}" ${start}..${end}.`);
+    } else if (command === "schedule-weekly" && industryId) {
+      await scheduleWeekly(industryId);
+      console.log(`Registered weekly scrape + digest schedulers for "${industryId}".`);
     } else {
       console.error(
-        "Usage:\n  scheduler scrape <industryId>\n  scheduler digest <industryId> <startISO> <endISO>",
+        "Usage:\n  scheduler scrape <industryId> [sourceId...]\n" +
+          "  scheduler digest <industryId> <startISO> <endISO>\n" +
+          "  scheduler schedule-weekly <industryId>",
       );
       process.exitCode = 1;
     }

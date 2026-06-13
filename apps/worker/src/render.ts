@@ -4,12 +4,17 @@ import { desc, eq, inArray } from "drizzle-orm";
 import { getDb, schema } from "@bellwether/db";
 import { renderDigestPdf, type WeeklyDigest } from "@bellwether/digest";
 
+export interface LoadedDigest {
+  digestId: string;
+  digest: WeeklyDigest;
+  sourceUrls: Record<string, string>;
+}
+
 /**
- * Loads the most recent persisted digest for an industry, resolves every cited
- * raw-record id to its source URL, renders a PDF, and writes it to ./out.
- * Returns the output path.
+ * Loads the most recent persisted digest for an industry and resolves every
+ * cited raw-record id to its source URL. Shared by render + deliver.
  */
-export async function renderLatestDigest(industryId: string, outDir = "out"): Promise<string> {
+export async function loadLatestDigest(industryId: string): Promise<LoadedDigest> {
   const db = getDb();
   const [row] = await db
     .select()
@@ -32,10 +37,15 @@ export async function renderLatestDigest(industryId: string, outDir = "out"): Pr
       .where(inArray(schema.rawRecords.id, citedIds));
     for (const r of records) if (r.url) sourceUrls[r.id] = r.url;
   }
+  return { digestId: row.id, digest, sourceUrls };
+}
 
+/** Renders the latest digest to a cited PDF on disk under ./out; returns the path. */
+export async function renderLatestDigest(industryId: string, outDir = "out"): Promise<string> {
+  const { digestId, digest, sourceUrls } = await loadLatestDigest(industryId);
   const pdf = await renderDigestPdf(digest, { sourceUrls });
   await mkdir(outDir, { recursive: true });
-  const path = resolve(outDir, `digest-${industryId}-${row.id}.pdf`);
+  const path = resolve(outDir, `digest-${industryId}-${digestId}.pdf`);
   await writeFile(path, pdf);
   return path;
 }

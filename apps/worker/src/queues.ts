@@ -20,6 +20,9 @@ export interface ExtractJob {
 }
 export interface DigestJob {
   industryId: string;
-  periodStart: string;
-  periodEnd: string;
+  /** Explicit window. If omitted, the processor uses a rolling window. */
+  periodStart?: string;
+  periodEnd?: string;
+  /** Rolling window length (days) when periodStart/End are omitted. Default 7. */
+  rollingDays?: number;
 }
