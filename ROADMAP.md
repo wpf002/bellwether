@@ -74,9 +74,12 @@ Goal: prove the engine generalizes without per-industry code.
       ZERO engine changes (only the industries package + registry line). Live
       proof: same pipeline → 30 signals (events + sentiment) for `ecommerce`.
 - [x] Pack-validation on boot (registry parses every pack; tested).
-- [ ] Harden the pack abstraction against what Phase 1 actually needed.
-- [ ] KPI engine: implement the declarative aggregations (count, share_of_voice…).
-- [ ] Pack versioning persisted in the `industries` table.
+- [x] Hardened the pack abstraction: per-source `maxItems` override + pack
+      `version` field (the two gaps Phase 1's full run exposed).
+- [x] KPI engine: declarative aggregations (count, share_of_voice, mean, min,
+      max, latest) over signals, deterministic, surfaced in the digest. Live:
+      share-of-voice by company, complaint counts by polarity.
+- [x] Pack versioning persisted in the `industries` table (upsert on scrape).
 - Measure: adding a third vertical should take **days, not weeks**.
 
 Exit: vertical #2 ships with zero engine changes; vertical #3 is a day of work.

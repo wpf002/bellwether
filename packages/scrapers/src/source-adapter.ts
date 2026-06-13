@@ -37,9 +37,9 @@ export abstract class SourceAdapter {
     const body = await res.text();
 
     const now = new Date().toISOString();
-    const items = ctx.maxItems
-      ? this.parse(source, body).slice(0, ctx.maxItems)
-      : this.parse(source, body);
+    const cap = source.maxItems ?? ctx.maxItems; // per-source override wins
+    const parsed = this.parse(source, body);
+    const items = cap ? parsed.slice(0, cap) : parsed;
     return items.map((item) => ({
       id: randomUUID(),
       sourceId: source.id,

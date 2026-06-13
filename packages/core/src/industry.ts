@@ -22,6 +22,9 @@ export const SourceDef = z.object({
   url: z.string(),
   /** Per-source override of the global crawl etiquette. */
   rateLimitMs: z.number().int().positive().optional(),
+  /** Per-source cap on records kept per fetch, overriding the global default.
+   *  Phase 1 hardening: some feeds (e.g. full archives) need a tighter cap. */
+  maxItems: z.number().int().positive().optional(),
   /** If true, this source may contain personal data — handle per COMPLIANCE. */
   mayContainPersonalData: z.boolean().default(false),
   /**
@@ -56,6 +59,8 @@ export const IndustryPack = z.object({
   id: z.string(), // e.g. "saas"
   label: z.string(), // e.g. "B2B SaaS"
   description: z.string(),
+  /** Pack version, persisted in the `industries` table for auditability. */
+  version: z.string().default("0.1.0"),
   /** The curated source list — the part that takes real domain knowledge. */
   sources: z.array(SourceDef).min(1),
   /** Which entities this vertical tracks. */

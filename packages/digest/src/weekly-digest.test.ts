@@ -2,9 +2,21 @@ import { describe, expect, it } from "vitest";
 import type { IndustryPack, Signal } from "@bellwether/core";
 import { buildWeeklyDigest } from "./weekly-digest.js";
 
-// buildWeeklyDigest only reads pack.id; a minimal stand-in keeps the test from
-// depending on the industries package.
-const pack = { id: "saas" } as unknown as IndustryPack;
+// Minimal stand-in: buildWeeklyDigest reads pack.id and pack.kpis. Keeps the
+// test from depending on the industries package.
+const pack = {
+  id: "saas",
+  kpis: [
+    { id: "events", label: "Market events", aggregation: "count", entityKind: "market_event" },
+    {
+      id: "complaints",
+      label: "Complaints by polarity",
+      aggregation: "count",
+      entityKind: "sentiment_theme",
+      field: "polarity",
+    },
+  ],
+} as unknown as IndustryPack;
 
 function signal(overrides: Partial<Signal> & Pick<Signal, "entityKind" | "payload">): Signal {
   return {
@@ -73,5 +85,13 @@ describe("buildWeeklyDigest", () => {
   it("echoes the requested period and industry", () => {
     expect(digest.industryId).toBe("saas");
     expect(digest.periodStart).toBe("2026-06-07T00:00:00.000Z");
+  });
+
+  it("computes the pack's declarative KPIs over the signals", () => {
+    const events = digest.kpis.find((k) => k.id === "events");
+    expect(events?.value).toBe(1); // one market_event signal
+    const complaints = digest.kpis.find((k) => k.id === "complaints");
+    // count grouped by polarity: 1 negative, 1 positive
+    expect(complaints?.value).toEqual({ negative: 1, positive: 1 });
   });
 });

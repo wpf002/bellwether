@@ -1,4 +1,4 @@
-import type { Signal, IndustryPack } from "@bellwether/core";
+import { computeKpis, type Signal, type IndustryPack, type KpiResult } from "@bellwether/core";
 
 /**
  * The Phase 1 product output. Not a dashboard — a structured digest that can be
@@ -18,6 +18,8 @@ export interface WeeklyDigest {
   industryId: string;
   periodStart: string;
   periodEnd: string;
+  /** Declarative KPIs computed from the pack's KpiDefs (deterministic). */
+  kpis: KpiResult[];
   keyPlayers: Finding[];
   whatChanged: Finding[];
   buyerComplaints: Finding[];
@@ -61,6 +63,7 @@ export function buildWeeklyDigest(input: BuildDigestInput): WeeklyDigest {
     industryId: pack.id,
     periodStart,
     periodEnd,
+    kpis: computeKpis(pack, signals),
     keyPlayers,
     whatChanged,
     buyerComplaints,

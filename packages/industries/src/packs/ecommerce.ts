@@ -14,6 +14,7 @@ import type { IndustryPack } from "@bellwether/core";
 export const ecommercePack: IndustryPack = {
   id: "ecommerce",
   label: "E-commerce & Retail",
+  version: "0.1.0",
   description:
     "Market intelligence for online retail: who's moving, what's launching, pricing and channel shifts, and shopper/merchant sentiment.",
   entityKinds: ["company", "sentiment_theme", "market_event"],
@@ -88,9 +89,10 @@ export const ecommercePack: IndustryPack = {
   kpis: [
     {
       id: "share_of_voice",
-      label: "Share of voice",
+      label: "Share of voice (by company)",
       aggregation: "share_of_voice",
-      entityKind: "market_event",
+      entityKind: "company",
+      field: "name",
     },
     {
       id: "negative_themes",

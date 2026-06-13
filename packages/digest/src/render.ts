@@ -1,9 +1,23 @@
 import PDFDocument from "pdfkit";
+import type { KpiValue } from "@bellwether/core";
 import type { Finding, WeeklyDigest } from "./weekly-digest.js";
 
 export interface RenderSection {
   heading: string;
   findings: Finding[];
+}
+
+/** Formats a KPI value (scalar, distribution, or null) for display. */
+export function formatKpiValue(value: KpiValue): string {
+  if (value == null) return "—";
+  if (typeof value === "number") return Number.isInteger(value) ? String(value) : value.toFixed(2);
+  if (typeof value === "string") return value;
+  const entries = Object.entries(value);
+  if (entries.length === 0) return "—";
+  return entries
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, n]) => `${k} ${n < 1 ? `${Math.round(n * 100)}%` : n}`)
+    .join(", ");
 }
 
 /**
@@ -50,6 +64,14 @@ export function renderDigestPdf(
       .text(`Period: ${digest.periodStart} → ${digest.periodEnd}`)
       .text(`Generated: ${digest.generatedAt}`)
       .fillColor("#000");
+
+    if (digest.kpis?.length) {
+      doc.moveDown(1).fontSize(14).text("Key metrics");
+      doc.moveDown(0.3).fontSize(10);
+      for (const kpi of digest.kpis) {
+        doc.text(`• ${kpi.label}: ${formatKpiValue(kpi.value)}`);
+      }
+    }
 
     for (const section of digestSections(digest)) {
       doc.moveDown(1).fontSize(14).text(`${section.heading} (${section.findings.length})`);

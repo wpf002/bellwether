@@ -23,6 +23,7 @@ import type { IndustryPack } from "@bellwether/core";
 export const saasPack: IndustryPack = {
   id: "saas",
   label: "B2B SaaS",
+  version: "1.0.0",
   description:
     "Competitive and market intelligence for B2B software: positioning, pricing, feature movement, and buyer sentiment.",
   entityKinds: ["company", "sentiment_theme", "market_event"],
@@ -164,9 +165,10 @@ export const saasPack: IndustryPack = {
   kpis: [
     {
       id: "share_of_voice",
-      label: "Share of voice",
+      label: "Share of voice (by company)",
       aggregation: "share_of_voice",
-      entityKind: "market_event",
+      entityKind: "company",
+      field: "name",
     },
     {
       id: "negative_themes",

@@ -6,6 +6,15 @@ const digest: WeeklyDigest = {
   industryId: "saas",
   periodStart: "2026-06-07T00:00:00.000Z",
   periodEnd: "2026-06-13T23:59:59.000Z",
+  kpis: [
+    {
+      id: "events",
+      label: "Market events",
+      aggregation: "count",
+      entityKind: "market_event",
+      value: 1,
+    },
+  ],
   keyPlayers: [{ claim: "Active player: Stripe", sourceRecordIds: ["raw_a"], signalId: "c1" }],
   whatChanged: [{ claim: "Stripe ships X", sourceRecordIds: ["raw_b"], signalId: "e1" }],
   buyerComplaints: [],

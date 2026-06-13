@@ -10,8 +10,16 @@ import type { IndustryPack } from "@bellwether/core";
 export async function ensurePackPersisted(db: Database, pack: IndustryPack): Promise<void> {
   await db
     .insert(schema.industries)
-    .values({ id: pack.id, label: pack.label, description: pack.description })
-    .onConflictDoNothing();
+    .values({
+      id: pack.id,
+      label: pack.label,
+      description: pack.description,
+      packVersion: pack.version,
+    })
+    .onConflictDoUpdate({
+      target: schema.industries.id,
+      set: { label: pack.label, description: pack.description, packVersion: pack.version },
+    });
 
   if (pack.sources.length > 0) {
     await db
