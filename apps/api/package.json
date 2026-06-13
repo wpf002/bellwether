@@ -15,8 +15,10 @@
   "dependencies": {
     "@bellwether/core": "workspace:*",
     "@bellwether/db": "workspace:*",
+    "@bellwether/digest": "workspace:*",
     "@bellwether/industries": "workspace:*",
     "@fastify/cors": "^10.0.1",
+    "drizzle-orm": "^0.36.0",
     "fastify": "^5.0.0"
   },
   "devDependencies": {

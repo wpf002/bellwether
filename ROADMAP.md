@@ -88,14 +88,22 @@ Exit: vertical #2 ships with zero engine changes; vertical #3 is a day of work.
 
 Goal: a usable UI without scope creep.
 
-- Three views only: **Market Overview**, **Competitor Tracker**, **Trend Feed**.
-- Select industry, set key competitors, see a running change feed, pull a digest.
-- LLM narrative summaries in the UI — but with the citation layer intact (each
-  claim links to its source records). Build against the `frontend-design`
-  system, not ad hoc.
+- [x] Three views: **Market Overview**, **Competitor Tracker**, **Trend Feed**
+      (tabbed Next.js dashboard at `/[industry]`).
+- [x] Industry picker (home), per-user competitor selection (localStorage),
+      running change feed (events), on-demand digest pull (live `/digest`).
+- [x] Read-only API surface: `/industries/:id/{overview,companies,events,digest}`,
+      every finding/event/company carrying source-URL citations.
+- [x] Narrative summary with the citation layer intact. NOTE: implemented as a
+      DETERMINISTIC narrative (counts only) rather than an LLM one — keeps the
+      "LLM extracts, never decides" invariant clean and the dashboard key-free.
+      An LLM-narration variant can be layered on later.
+- [~] Built with clean Tailwind. The repo has no `frontend-design` system to
+  build against; revisit if/when one lands.
 - No maps, no simulation, no compliance module yet.
 
-Exit: a user can self-serve a digest for their industry from the browser.
+Exit: a user can self-serve a digest for their industry from the browser. ✓
+(live-verified against seeded saas/ecommerce data).
 
 ## Phase 4 — Scraping infrastructure hardening
 

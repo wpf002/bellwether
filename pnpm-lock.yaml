@@ -38,12 +38,18 @@ importers:
       '@bellwether/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@bellwether/digest':
+        specifier: workspace:*
+        version: link:../../packages/digest
       '@bellwether/industries':
         specifier: workspace:*
         version: link:../../packages/industries
       '@fastify/cors':
         specifier: ^10.0.1
         version: 10.1.0
+      drizzle-orm:
+        specifier: ^0.36.0
+        version: 0.36.4(@types/react@18.3.31)(postgres@3.4.9)(react@18.3.1)
       fastify:
         specifier: ^5.0.0
         version: 5.8.5
