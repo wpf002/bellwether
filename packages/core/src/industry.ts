@@ -10,13 +10,7 @@ import { z } from "zod";
  * adding a new vertical = authoring one pack, no engine changes.
  */
 
-export const SourceKind = z.enum([
-  "rss",
-  "html",
-  "json_api",
-  "review_site",
-  "social_public",
-]);
+export const SourceKind = z.enum(["rss", "html", "json_api", "review_site", "social_public"]);
 export type SourceKind = z.infer<typeof SourceKind>;
 
 export const SourceDef = z.object({

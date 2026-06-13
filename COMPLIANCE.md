@@ -8,7 +8,7 @@ approach before scaling.
 ## Non-negotiables baked into the code
 
 - **robots.txt is respected by default.** `SCRAPER_RESPECT_ROBOTS=true`. The
-  base adapter (`@bellwether/scrapers`) fails *closed* — if robots.txt can't be
+  base adapter (`@bellwether/scrapers`) fails _closed_ — if robots.txt can't be
   fetched, the request is denied, not allowed.
 - **Rate limiting is enforced in the base adapter**, not left to each scraper.
   `SCRAPER_DEFAULT_RATE_LIMIT_MS` + per-source override.

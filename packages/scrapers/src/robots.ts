@@ -1,6 +1,18 @@
 import robotsParser from "robots-parser";
 
-const cache = new Map<string, ReturnType<typeof robotsParser>>();
+/**
+ * `robots-parser` ships a malformed type declaration: an empty
+ * `declare module 'robots-parser';` shadows its real signature, so TypeScript
+ * sees the default import as a non-callable namespace. At runtime the module's
+ * export is the parser function (`module.exports = robotsParser`), so we pin the
+ * signature we actually depend on here.
+ */
+interface RobotsRules {
+  isAllowed(url: string, ua?: string): boolean | undefined;
+}
+const parseRobots = robotsParser as unknown as (url: string, robotstxt: string) => RobotsRules;
+
+const cache = new Map<string, RobotsRules>();
 
 /**
  * Fetches and caches a host's robots.txt, then answers whether a path is
@@ -19,7 +31,7 @@ export async function isAllowed(targetUrl: string, userAgent: string): Promise<b
     try {
       const res = await fetch(robotsUrl, { headers: { "user-agent": userAgent } });
       const body = res.ok ? await res.text() : "";
-      parser = robotsParser(robotsUrl, body);
+      parser = parseRobots(robotsUrl, body);
       cache.set(robotsUrl, parser);
     } catch {
       return false; // fail closed

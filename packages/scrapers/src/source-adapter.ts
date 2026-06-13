@@ -16,7 +16,10 @@ export abstract class SourceAdapter {
   abstract readonly id: string;
 
   /** Turn fetched text into zero or more raw records. */
-  protected abstract parse(source: SourceDef, body: string): Array<{ url: string | null; raw: string }>;
+  protected abstract parse(
+    source: SourceDef,
+    body: string,
+  ): Array<{ url: string | null; raw: string }>;
 
   async fetch(source: SourceDef, ctx: FetchContext): Promise<RawRecord[]> {
     const allowed = await isAllowed(source.url, ctx.userAgent);

@@ -1,12 +1,4 @@
-import {
-  pgTable,
-  text,
-  timestamp,
-  jsonb,
-  integer,
-  index,
-  uniqueIndex,
-} from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, jsonb, integer, index, uniqueIndex } from "drizzle-orm/pg-core";
 
 /**
  * Storage schema enforces the provenance invariant: signals reference the raw
@@ -26,7 +18,9 @@ export const sources = pgTable(
   "sources",
   {
     id: text("id").primaryKey(), // matches SourceDef.id
-    industryId: text("industry_id").notNull().references(() => industries.id),
+    industryId: text("industry_id")
+      .notNull()
+      .references(() => industries.id),
     label: text("label").notNull(),
     kind: text("kind").notNull(),
     adapter: text("adapter").notNull(),
@@ -41,7 +35,9 @@ export const rawRecords = pgTable(
   "raw_records",
   {
     id: text("id").primaryKey(),
-    sourceId: text("source_id").notNull().references(() => sources.id),
+    sourceId: text("source_id")
+      .notNull()
+      .references(() => sources.id),
     url: text("url"),
     fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull(),
     contentHash: text("content_hash").notNull(),
@@ -57,7 +53,9 @@ export const signals = pgTable(
   "signals",
   {
     id: text("id").primaryKey(),
-    industryId: text("industry_id").notNull().references(() => industries.id),
+    industryId: text("industry_id")
+      .notNull()
+      .references(() => industries.id),
     entityKind: text("entity_kind").notNull(),
     payload: jsonb("payload").notNull(),
     sourceRecordIds: jsonb("source_record_ids").notNull(), // string[]
@@ -72,7 +70,9 @@ export const signals = pgTable(
 
 export const digests = pgTable("digests", {
   id: text("id").primaryKey(),
-  industryId: text("industry_id").notNull().references(() => industries.id),
+  industryId: text("industry_id")
+    .notNull()
+    .references(() => industries.id),
   periodStart: timestamp("period_start", { withTimezone: true }).notNull(),
   periodEnd: timestamp("period_end", { withTimezone: true }).notNull(),
   body: jsonb("body").notNull(), // structured digest (see @bellwether/digest)

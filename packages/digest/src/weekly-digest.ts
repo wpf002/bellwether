@@ -47,15 +47,15 @@ export function buildWeeklyDigest(input: BuildDigestInput): WeeklyDigest {
 
   const keyPlayers = signals
     .filter((s) => s.entityKind === "company")
-    .map((s) => toFinding(s, `Active player: ${String((s.payload as any).name ?? "unknown")}`));
+    .map((s) => toFinding(s, `Active player: ${String(s.payload.name ?? "unknown")}`));
 
   const whatChanged = signals
     .filter((s) => s.entityKind === "market_event")
-    .map((s) => toFinding(s, String((s.payload as any).headline ?? "market event")));
+    .map((s) => toFinding(s, String(s.payload.headline ?? "market event")));
 
   const buyerComplaints = signals
-    .filter((s) => s.entityKind === "sentiment_theme" && (s.payload as any).polarity === "negative")
-    .map((s) => toFinding(s, `Complaint theme: ${String((s.payload as any).theme ?? "unknown")}`));
+    .filter((s) => s.entityKind === "sentiment_theme" && s.payload.polarity === "negative")
+    .map((s) => toFinding(s, `Complaint theme: ${String(s.payload.theme ?? "unknown")}`));
 
   return {
     industryId: pack.id,

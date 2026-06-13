@@ -21,7 +21,7 @@ Guiding invariants (do not violate without a deliberate decision):
 
 ---
 
-## Phase 0 — Foundation  *(this scaffold)*
+## Phase 0 — Foundation _(this scaffold)_
 
 Goal: a coherent, pushable monorepo with the architecture locked.
 
@@ -34,11 +34,15 @@ Goal: a coherent, pushable monorepo with the architecture locked.
 - `@bellwether/industries`: pack registry + SaaS reference pack.
 - `@bellwether/digest`: provenance-carrying weekly digest builder.
 - `apps/api` (Fastify), `apps/worker` (BullMQ), `apps/web` (Next.js skeleton).
-- Docker Compose for Postgres + Redis. CI to add.
+- Docker Compose for Postgres + Redis.
+- ESLint + Prettier + Vitest wired through the workspace; first `runChain`
+  lineage test locks the provenance contract.
+- GitHub Actions CI: typecheck · lint · format · test · build on every PR.
 
-Exit: `pnpm install && pnpm build` clean; `docker compose up` brings up infra.
+Exit: `pnpm install && pnpm build` clean; `docker compose up` brings up infra;
+CI green.
 
-## Phase 1 — One industry, end to end  *(the only thing that matters next)*
+## Phase 1 — One industry, end to end _(the only thing that matters next)_
 
 Goal: prove the output is worth paying for, in ONE vertical (SaaS), with NO UI.
 
@@ -54,7 +58,7 @@ Goal: prove the output is worth paying for, in ONE vertical (SaaS), with NO UI.
 
 Exit: at least a handful of buyers say yes (or tell you precisely what's off).
 
-## Phase 2 — The industry-config layer  *(make "pivot" real)*
+## Phase 2 — The industry-config layer _(make "pivot" real)_
 
 Goal: prove the engine generalizes without per-industry code.
 
@@ -65,7 +69,7 @@ Goal: prove the engine generalizes without per-industry code.
 
 Exit: vertical #2 ships with zero engine changes; vertical #3 is a day of work.
 
-## Phase 3 — Minimal dashboard  *(overlaps Phase 2)*
+## Phase 3 — Minimal dashboard _(overlaps Phase 2)_
 
 Goal: a usable UI without scope creep.
 
@@ -90,7 +94,7 @@ Goal: stop being brittle.
 
 Exit: a source going dark pages you; it does not silently rot the product.
 
-## Phase 5 — Insight quality + feedback loop  *(the moat)*
+## Phase 5 — Insight quality + feedback loop _(the moat)_
 
 Goal: get smarter with use; this is the defensibility.
 
@@ -109,13 +113,13 @@ Goal: turn it into a business.
 - Rate/usage limits, audit logs, role-based access.
 - Deployment to Railway (api, worker, web, Postgres, Redis), prod observability.
 
-## Phase 7 — Advanced modules  *(only if validated)*
+## Phase 7 — Advanced modules _(only if validated)_
 
 The flashy GPT directions live here, as bolt-ons — never as the core bet:
 
 - Sentiment-driven opportunity map.
-- Competitive-interaction simulation *(explicitly deferred: requires historical
-  data and model accuracy that don't exist early — do not promise it sooner).*
+- Competitive-interaction simulation _(explicitly deferred: requires historical
+  data and model accuracy that don't exist early — do not promise it sooner)._
 - Regulatory-compliance dashboard per industry.
 
 ---

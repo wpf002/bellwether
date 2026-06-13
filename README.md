@@ -4,7 +4,7 @@
 public web, news, and social sources, structures them through an auditable
 pipeline, and tells you where that market is heading.
 
-It is deliberately *not* a feed reader with an LLM bolted on. Every claim it
+It is deliberately _not_ a feed reader with an LLM bolted on. Every claim it
 makes is traceable to a raw source record, and the LLM is used in exactly one
 role — turning unstructured text into structured data — never to score, rank,
 or decide.
@@ -60,18 +60,18 @@ pnpm db:migrate
 pnpm dev
 ```
 
-API: http://localhost:4000  •  Web: http://localhost:3001
+API: http://localhost:4000 • Web: http://localhost:3001
 
 ## Scripts
 
-| Command | Description |
-| --- | --- |
-| `pnpm build` | Build all packages/apps |
-| `pnpm dev` | Run all apps in watch mode |
-| `pnpm typecheck` | Typecheck the workspace |
-| `pnpm db:generate` | Generate Drizzle migrations |
-| `pnpm db:migrate` | Apply migrations |
-| `pnpm db:studio` | Open Drizzle Studio |
+| Command                        | Description                 |
+| ------------------------------ | --------------------------- |
+| `pnpm build`                   | Build all packages/apps     |
+| `pnpm dev`                     | Run all apps in watch mode  |
+| `pnpm typecheck`               | Typecheck the workspace     |
+| `pnpm db:generate`             | Generate Drizzle migrations |
+| `pnpm db:migrate`              | Apply migrations            |
+| `pnpm db:studio`               | Open Drizzle Studio         |
 | `pnpm infra:up` / `infra:down` | Start/stop Postgres + Redis |
 
 ## License
