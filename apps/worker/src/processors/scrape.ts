@@ -23,6 +23,7 @@ export async function processScrape(job: ScrapeJob): Promise<void> {
   const ctx = {
     userAgent: process.env.SCRAPER_USER_AGENT ?? "BellwetherBot/0.1 (+https://example.com/bot)",
     defaultRateLimitMs: Number(process.env.SCRAPER_DEFAULT_RATE_LIMIT_MS ?? 2000),
+    maxItems: Number(process.env.SCRAPER_MAX_ITEMS ?? 25),
   };
   const fetched = await getAdapter(source.adapter).fetch(source, ctx);
 

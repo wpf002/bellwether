@@ -5,6 +5,9 @@ import { isAllowed } from "./robots.js";
 export interface FetchContext {
   userAgent: string;
   defaultRateLimitMs: number;
+  /** Cap on records kept per fetch — keeps a weekly digest from ingesting a
+   *  feed's full archive. Undefined = no cap. */
+  maxItems?: number;
 }
 
 /**
@@ -34,7 +37,10 @@ export abstract class SourceAdapter {
     const body = await res.text();
 
     const now = new Date().toISOString();
-    return this.parse(source, body).map((item) => ({
+    const items = ctx.maxItems
+      ? this.parse(source, body).slice(0, ctx.maxItems)
+      : this.parse(source, body);
+    return items.map((item) => ({
       id: randomUUID(),
       sourceId: source.id,
       url: item.url,
