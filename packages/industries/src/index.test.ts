@@ -4,18 +4,22 @@ import { industryPacks, getIndustryPack, listIndustryPacks } from "./index.js";
 import { ecommercePack } from "./packs/ecommerce.js";
 
 /**
- * The Phase 2 thesis check: a second vertical is just another pack. These guard
- * that both packs validate on load (boot-validation) and that the registry
- * exposes them uniformly — no per-industry code path.
+ * The Phase 2 thesis check: a vertical is just another pack. These guard that
+ * every pack validates on load (boot-validation) and that the registry exposes
+ * them uniformly — no per-industry code path.
  */
 describe("industry registry", () => {
-  it("registers both verticals", () => {
-    expect(Object.keys(industryPacks).sort()).toEqual(["ecommerce", "saas"]);
-    expect(listIndustryPacks()).toHaveLength(2);
+  it("registers the flagship verticals plus the catalog (20 total)", () => {
+    const ids = Object.keys(industryPacks);
+    expect(ids).toContain("saas");
+    expect(ids).toContain("ecommerce");
+    expect(listIndustryPacks().length).toBe(20);
   });
 
-  it("validates the e-commerce pack against the same IndustryPack schema", () => {
-    expect(() => parseIndustryPack(ecommercePack)).not.toThrow();
+  it("validates every registered pack against the IndustryPack schema", () => {
+    for (const pack of listIndustryPacks()) {
+      expect(() => parseIndustryPack(pack)).not.toThrow();
+    }
   });
 
   it("e-commerce reuses the canonical entity kinds (no new engine types)", () => {

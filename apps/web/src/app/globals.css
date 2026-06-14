@@ -1,3 +1,47 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    @apply bg-canvas text-ink antialiased;
+    /* Subtle aurora wash so the page never feels like a blank sheet. */
+    background-image:
+      radial-gradient(60rem 40rem at 110% -10%, rgba(99, 102, 241, 0.1), transparent 60%),
+      radial-gradient(50rem 40rem at -10% 0%, rgba(245, 158, 11, 0.07), transparent 55%);
+    background-attachment: fixed;
+  }
+  ::selection {
+    @apply bg-brand-200 text-ink;
+  }
+}
+
+@layer components {
+  .shell {
+    @apply mx-auto w-full max-w-[1400px] px-6 lg:px-10;
+  }
+  .card {
+    @apply rounded-xl2 border border-slate-200/80 bg-white/90 shadow-card backdrop-blur-sm;
+  }
+  .stat {
+    @apply rounded-xl border border-slate-200/80 bg-white/80 p-4;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  .tab {
+    @apply -mb-px border-b-2 px-1 py-3 text-sm font-medium transition-colors;
+  }
+  .tab-active {
+    @apply border-brand-600 text-ink;
+  }
+  .tab-idle {
+    @apply border-transparent text-ink-400 hover:text-ink-700;
+  }
+  .link-cite {
+    @apply text-brand-600 hover:text-brand-700 hover:underline;
+  }
+}

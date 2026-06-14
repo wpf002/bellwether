@@ -10,6 +10,7 @@ import type {
   KpiValue,
   Overview,
 } from "@/lib/api";
+import { humanize, kindStyle, logoFor, initials } from "@/lib/format";
 
 type Tab = "overview" | "competitors" | "feed";
 
@@ -19,22 +20,40 @@ function formatKpi(value: KpiValue): string {
   if (typeof value === "string") return value;
   const entries = Object.entries(value).sort((a, b) => b[1] - a[1]);
   if (entries.length === 0) return "—";
-  return entries.map(([k, n]) => `${k} ${n < 1 ? `${Math.round(n * 100)}%` : n}`).join(" · ");
+  return entries
+    .map(([k, n]) => `${humanize(k)} ${n < 1 ? `${Math.round(n * 100)}%` : n}`)
+    .join("  ·  ");
+}
+
+function CompanyLogo({ name, url }: { name: string; url?: string }) {
+  const [failed, setFailed] = useState(false);
+  const src = logoFor(url);
+  if (src && !failed) {
+    return (
+      <img
+        src={src}
+        alt=""
+        width={28}
+        height={28}
+        className="h-7 w-7 shrink-0 rounded-md bg-white object-contain ring-1 ring-slate-200"
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+  return (
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-brand-50 text-[11px] font-semibold text-brand-700 ring-1 ring-brand-100">
+      {initials(name)}
+    </span>
+  );
 }
 
 function Cite({ ids, citations }: { ids: string[]; citations: Record<string, string | null> }) {
   const urls = ids.map((id) => citations[id]).filter((u): u is string => Boolean(u));
-  if (urls.length === 0) return <span className="text-xs text-neutral-400"> (no source)</span>;
+  if (urls.length === 0) return <span className="text-xs text-ink-400"> (no source)</span>;
   return (
     <span className="ml-1 space-x-1 text-xs">
       {urls.slice(0, 3).map((u, i) => (
-        <a
-          key={u}
-          href={u}
-          target="_blank"
-          rel="noreferrer"
-          className="text-blue-600 hover:underline"
-        >
+        <a key={u} href={u} target="_blank" rel="noreferrer" className="link-cite">
           [{i + 1}]
         </a>
       ))}
@@ -91,60 +110,72 @@ export function Dashboard({
     [companies, tracked],
   );
 
-  // Client-side competitor scoping (mirrors the API's ?companies= filter).
   const active = scoped && tracked.length > 0;
   const inScope = (text: string) =>
     tracked.some((n) => text.toLowerCase().includes(n.toLowerCase()));
   const shownEvents = active ? events.filter((e) => inScope(e.headline)) : events;
   const scopeFindings = (fs: Finding[]) => (active ? fs.filter((f) => inScope(f.claim)) : fs);
 
+  const tabs: [Tab, string][] = [
+    ["overview", "Market Overview"],
+    ["competitors", "Competitor Tracker"],
+    ["feed", "Trend Feed"],
+  ];
+
   return (
     <div className="mt-6">
-      <nav className="flex gap-1 border-b">
-        {(
-          [
-            ["overview", "Market Overview"],
-            ["competitors", "Competitor Tracker"],
-            ["feed", "Trend Feed"],
-          ] as [Tab, string][]
-        ).map(([key, label]) => (
+      {/* Stat strip */}
+      <div className="mb-6 grid grid-cols-3 gap-3 sm:max-w-xl">
+        <Stat label="Market events" value={overview.totals.events} />
+        <Stat label="Company mentions" value={overview.totals.companies} />
+        <Stat label="Buyer complaints" value={overview.totals.complaints} accent />
+      </div>
+
+      <nav className="flex items-center gap-6 border-b border-slate-200">
+        {tabs.map(([key, label]) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm ${
-              tab === key
-                ? "border-neutral-900 font-medium text-neutral-900"
-                : "border-transparent text-neutral-500 hover:text-neutral-800"
-            }`}
+            className={`tab ${tab === key ? "tab-active" : "tab-idle"}`}
           >
             {label}
           </button>
         ))}
         {tracked.length > 0 && (
-          <label className="ml-auto flex items-center gap-1.5 self-center text-xs text-neutral-600">
-            <input type="checkbox" checked={scoped} onChange={(e) => setScoped(e.target.checked)} />
-            Scope to my competitors ({tracked.length})
+          <label
+            className="ml-auto flex cursor-pointer items-center gap-2 self-center text-xs text-ink-500"
+            title="Show only the companies you've checked in Competitor Tracker. Filters players and events to your watchlist; market-wide sentiment is always shown."
+          >
+            <input
+              type="checkbox"
+              checked={scoped}
+              onChange={(e) => setScoped(e.target.checked)}
+              className="accent-brand-600"
+            />
+            Only my watchlist ({tracked.length})
           </label>
         )}
       </nav>
 
       {tab === "overview" && (
-        <section className="mt-5 space-y-5">
-          <p className="rounded-lg bg-neutral-50 p-4 text-sm leading-relaxed text-neutral-800">
+        <section className="mt-6 space-y-6">
+          <p className="card border-l-4 border-l-brand-500 p-5 text-[15px] leading-relaxed text-ink-700">
             {overview.narrative}
           </p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {overview.kpis.map((k: KpiResult) => (
-              <div key={k.id} className="rounded-lg border p-3">
-                <div className="text-xs uppercase tracking-wide text-neutral-500">{k.label}</div>
-                <div className="mt-1 text-sm font-medium text-neutral-900">
-                  {formatKpi(k.value)}
+              <div key={k.id} className="card p-4">
+                <div className="text-xs font-medium uppercase tracking-wide text-ink-400">
+                  {k.label}
                 </div>
+                <div className="mt-1.5 text-sm font-medium text-ink">{formatKpi(k.value)}</div>
               </div>
             ))}
           </div>
+
           {digest && (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
               <DigestList
                 title="What changed"
                 findings={scopeFindings(digest.whatChanged)}
@@ -166,76 +197,94 @@ export function Dashboard({
       )}
 
       {tab === "competitors" && (
-        <section className="mt-5">
-          <p className="mb-3 text-sm text-neutral-500">
-            Check companies to track them — your selection is saved in this browser and pinned to
-            the top.
+        <section className="mt-6">
+          <p className="mb-4 text-sm text-ink-500">
+            Check companies to add them to your watchlist (saved in this browser). The{" "}
+            <span className="font-medium text-ink-700">Only my watchlist</span> toggle then scopes
+            every view to them.
           </p>
-          <ul className="space-y-2">
+          <ul className="space-y-2.5">
             {sortedCompanies.length === 0 && (
-              <li className="text-neutral-500">No companies yet.</li>
+              <li className="card p-5 text-ink-500">
+                No companies extracted yet for this industry.
+              </li>
             )}
-            {sortedCompanies.map((c) => (
-              <li
-                key={c.name}
-                className={`flex items-center gap-3 rounded-lg border p-3 ${
-                  tracked.includes(c.name) ? "border-neutral-900 bg-neutral-50" : ""
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={tracked.includes(c.name)}
-                  onChange={() => toggle(c.name)}
-                  aria-label={`Track ${c.name}`}
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{c.name}</span>
-                    <span className="text-xs text-neutral-500">
-                      {c.mentions} mentions · {Math.round(c.share * 100)}% SoV
-                    </span>
-                  </div>
-                  <div className="mt-1 h-1.5 w-full rounded bg-neutral-100">
-                    <div
-                      className="h-1.5 rounded bg-neutral-800"
-                      style={{ width: `${Math.max(2, Math.round(c.share * 100))}%` }}
-                    />
+            {sortedCompanies.map((c) => {
+              const isTracked = tracked.includes(c.name);
+              return (
+                <li
+                  key={c.name}
+                  className={`card flex items-center gap-4 p-4 transition ${
+                    isTracked ? "ring-2 ring-brand-500/60" : ""
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isTracked}
+                    onChange={() => toggle(c.name)}
+                    aria-label={`Track ${c.name}`}
+                    className="h-4 w-4 accent-brand-600"
+                  />
+                  <CompanyLogo name={c.name} url={c.urls[0]} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="truncate font-medium text-ink">{c.name}</span>
+                      <span className="shrink-0 text-xs text-ink-400">
+                        {c.mentions} mentions · {Math.round(c.share * 100)}% SoV
+                      </span>
+                    </div>
+                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-brand-600 to-brand-400"
+                        style={{ width: `${Math.max(2, Math.round(c.share * 100))}%` }}
+                      />
+                    </div>
                   </div>
                   {c.urls[0] && (
                     <a
                       href={c.urls[0]}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-1 inline-block text-xs text-blue-600 hover:underline"
+                      className="link-cite text-xs"
                     >
-                      source
+                      source ↗
                     </a>
                   )}
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}
 
       {tab === "feed" && (
-        <section className="mt-5">
-          <ul className="divide-y">
-            {shownEvents.length === 0 && <li className="py-3 text-neutral-500">No events yet.</li>}
+        <section className="mt-6">
+          <ul className="space-y-1">
+            {shownEvents.length === 0 && (
+              <li className="card p-5 text-ink-500">No events in this window.</li>
+            )}
             {shownEvents.map((e: EventItem) => (
-              <li key={e.signalId} className="flex gap-3 py-3">
-                <span className="mt-0.5 shrink-0 rounded bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
-                  {e.kind.replace(/_/g, " ")}
+              <li
+                key={e.signalId}
+                className="flex items-start gap-3 rounded-lg px-3 py-3 transition hover:bg-white/70"
+              >
+                <span className={`chip mt-0.5 shrink-0 ${kindStyle(e.kind)}`}>
+                  {humanize(e.kind)}
                 </span>
                 <div className="min-w-0">
                   {e.url ? (
-                    <a href={e.url} target="_blank" rel="noreferrer" className="hover:underline">
+                    <a
+                      href={e.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-ink hover:text-brand-700 hover:underline"
+                    >
                       {e.headline}
                     </a>
                   ) : (
-                    <span>{e.headline}</span>
+                    <span className="text-ink">{e.headline}</span>
                   )}
-                  <div className="text-xs text-neutral-400">
+                  <div className="text-xs text-ink-400">
                     {new Date(e.detectedAt).toLocaleDateString()}
                   </div>
                 </div>
@@ -244,6 +293,17 @@ export function Dashboard({
           </ul>
         </section>
       )}
+    </div>
+  );
+}
+
+function Stat({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
+  return (
+    <div className="stat">
+      <div className={`text-2xl font-semibold ${accent ? "text-accent-600" : "text-ink"}`}>
+        {value}
+      </div>
+      <div className="mt-0.5 text-xs font-medium text-ink-400">{label}</div>
     </div>
   );
 }
@@ -258,16 +318,17 @@ function DigestList({
   citations: Record<string, string | null>;
 }) {
   return (
-    <div>
-      <h3 className="text-sm font-semibold text-neutral-700">
-        {title} <span className="text-neutral-400">({findings.length})</span>
+    <div className="card p-5">
+      <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
+        {title}
+        <span className="chip bg-slate-100 text-ink-400">{findings.length}</span>
       </h3>
       {findings.length === 0 ? (
-        <p className="mt-1 text-sm text-neutral-400">— none —</p>
+        <p className="mt-3 text-sm text-ink-400">— none —</p>
       ) : (
-        <ul className="mt-1 space-y-1">
+        <ul className="mt-3 space-y-2">
           {findings.slice(0, 25).map((f) => (
-            <li key={f.signalId} className="text-sm text-neutral-800">
+            <li key={f.signalId} className="text-sm leading-snug text-ink-700">
               {f.claim}
               <Cite ids={f.sourceRecordIds} citations={citations} />
             </li>
