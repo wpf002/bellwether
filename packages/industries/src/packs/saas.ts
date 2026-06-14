@@ -147,6 +147,56 @@ export const saasPack: IndustryPack = {
       mayContainPersonalData: false,
       extractAs: ["company", "market_event"],
     },
+    // --- Competitor pricing pages (server-rendered HTML) → rich company profiles ---
+    // Vendors' own /pricing pages are TOS-defensible and robots-permitted (verified),
+    // and give the pricing-tier + feature detail that thin blog-derived company
+    // signals lack. Scoped to `company`. SPA pricing pages (e.g. Atlassian, HubSpot)
+    // return no text on a plain fetch — they need the deferred Playwright fetcher.
+    {
+      id: "saas-stripe-pricing",
+      label: "Stripe — Pricing",
+      kind: "html",
+      adapter: "html-page",
+      url: "https://stripe.com/pricing",
+      mayContainPersonalData: false,
+      extractAs: ["company"],
+    },
+    {
+      id: "saas-notion-pricing",
+      label: "Notion — Pricing",
+      kind: "html",
+      adapter: "html-page",
+      url: "https://www.notion.com/pricing",
+      mayContainPersonalData: false,
+      extractAs: ["company"],
+    },
+    {
+      id: "saas-linear-pricing",
+      label: "Linear — Pricing",
+      kind: "html",
+      adapter: "html-page",
+      url: "https://linear.app/pricing",
+      mayContainPersonalData: false,
+      extractAs: ["company"],
+    },
+    {
+      id: "saas-slack-pricing",
+      label: "Slack — Pricing",
+      kind: "html",
+      adapter: "html-page",
+      url: "https://slack.com/pricing",
+      mayContainPersonalData: false,
+      extractAs: ["company"],
+    },
+    {
+      id: "saas-vercel-pricing",
+      label: "Vercel — Pricing",
+      kind: "html",
+      adapter: "html-page",
+      url: "https://vercel.com/pricing",
+      mayContainPersonalData: false,
+      extractAs: ["company"],
+    },
     // --- Public community sentiment → buyer complaints/praise ---
     // Reddit and Lobsters both disallow our bot in robots.txt (verified), and the
     // base adapter fails closed. hnrss.org (a Hacker News RSS service) permits

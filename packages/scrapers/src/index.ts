@@ -1,16 +1,19 @@
 import { RssNewsAdapter } from "./adapters/rss-news.js";
+import { HtmlPageAdapter } from "./adapters/html-page.js";
 import type { SourceAdapter } from "./source-adapter.js";
 
 export { SourceAdapter } from "./source-adapter.js";
 export type { FetchContext } from "./source-adapter.js";
 export { isAllowed } from "./robots.js";
 export { RssNewsAdapter, parseRssItems } from "./adapters/rss-news.js";
+export { HtmlPageAdapter, extractReadableText } from "./adapters/html-page.js";
 export { fetchTextWithRetry, ScrapeError } from "./fetch.js";
 export type { RetryConfig } from "./fetch.js";
 
 /** Adapter registry. Industry packs reference adapters by id. */
 export const adapterRegistry: Record<string, SourceAdapter> = {
   "rss-news": new RssNewsAdapter(),
+  "html-page": new HtmlPageAdapter(),
 };
 
 export function getAdapter(id: string): SourceAdapter {

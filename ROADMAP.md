@@ -116,10 +116,14 @@ Goal: stop being brittle.
       coverage counts — persisted to `sources` and exposed at
       `/industries/:id/sources` + a `monitor` CLI that exits non-zero (pageable)
       and emails an alert (SMTP-gated) when sources fail or go stale.
-- [~] Managed crawl / Playwright pool for JS-heavy sources, proxy strategy:
-  deferred — needs external infra (a browser pool / proxy provider). The
-  fetch path is isolated so a managed fetcher drops in behind the same
-  adapter contract. Phase 1 RSS sources don't need JS rendering.
+- [x] Server-rendered HTML adapter (`html-page`): captures readable page text
+      (one record/page) behind the same etiquette/retry base. Added 5 vendor
+      pricing pages to the SaaS pack → rich `company` profiles (tiers + features),
+      fixing thin blog-derived company signals. Live-verified.
+- [~] Managed crawl / Playwright pool for **client-rendered (SPA)** pages +
+  proxy strategy: still deferred — needs a browser pool / proxy provider.
+  The fetch path is isolated so a managed fetcher drops in behind the same
+  adapter contract.
 
 Exit: a source going dark pages you; it does not silently rot the product. ✓
 (verified: a robots-blocked source flips to DOWN with the error recorded, and
