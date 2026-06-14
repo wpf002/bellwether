@@ -75,17 +75,32 @@ export const SentimentExtraction = z.object({
 });
 export type SentimentExtraction = z.infer<typeof SentimentExtraction>;
 
+/** Market-event taxonomy. Kept deliberately rich so the catch-all `other`
+ *  stays small: most news is editorial (analysis/guide/research) or corporate
+ *  (partnership/expansion/earnings/legal), and those now have a home. */
+export const MARKET_EVENT_KINDS = [
+  "product_launch",
+  "product_update",
+  "pricing_change",
+  "funding",
+  "acquisition",
+  "partnership",
+  "expansion",
+  "leadership_change",
+  "layoffs",
+  "earnings",
+  "regulatory",
+  "legal",
+  "security_incident",
+  "research",
+  "analysis",
+  "guide",
+  "campaign",
+  "other",
+] as const;
+
 export const MarketEventExtraction = z.object({
-  kind: z.enum([
-    "product_launch",
-    "pricing_change",
-    "funding",
-    "acquisition",
-    "leadership_change",
-    "regulatory",
-    "campaign",
-    "other",
-  ]),
+  kind: z.enum(MARKET_EVENT_KINDS),
   headline: z.string(),
   occurredAt: z.string().nullable(),
 });

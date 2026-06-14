@@ -1,4 +1,5 @@
 import type { IndustryPack } from "@bellwether/core";
+import { EVENT_KIND_GUIDE } from "./catalog.js";
 
 /**
  * Second vertical (Phase 2): e-commerce / retail. The point of this pack is to
@@ -143,8 +144,7 @@ export const ecommercePack: IndustryPack = {
     {
       id: "ecom-event",
       entityKind: "market_event",
-      system:
-        "Extract one market event (product_launch|pricing_change|funding|acquisition|leadership_change|regulatory|campaign|other) relevant to retail/e-commerce, with a headline and occurredAt if stated. Channel expansions, store openings/closures, and marketplace changes count as product_launch or other. JSON keys: kind, headline, occurredAt.",
+      system: `Classify the retail/e-commerce text as ONE market event. Pick the SINGLE best kind: ${EVENT_KIND_GUIDE} Store openings/closures and channel/marketplace moves count as expansion; otherwise use "other" ONLY when nothing fits. JSON keys: kind, headline, occurredAt (the date it happened if stated, else null).`,
     },
   ],
 };

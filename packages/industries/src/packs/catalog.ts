@@ -33,6 +33,11 @@ const STANDARD_KPIS: KpiDef[] = [
   },
 ];
 
+/** Shared market-event taxonomy guide — defines each kind so the model rarely
+ *  falls back to "other". Reused across packs to keep classification consistent. */
+export const EVENT_KIND_GUIDE =
+  "product_launch (a new product or service released), product_update (a feature or update to an existing product), pricing_change (a price, plan, or packaging change), funding (a fundraising round or investment), acquisition (a merger or acquisition), partnership (an integration, alliance, or notable customer deployment), expansion (entering a new market/region, opening offices, or major hiring), leadership_change (an executive hire or departure), layoffs (job cuts or restructuring), earnings (financial results, revenue/ARR milestones, or valuation), regulatory (a government rule, policy, or compliance mandate), legal (a lawsuit, settlement, antitrust, or IP dispute), security_incident (a breach, ransomware, outage, or vulnerability), research (a report, study, survey, benchmark, market data, or a 'best/top' roundup), analysis (opinion, commentary, predictions, or trend pieces), guide (a how-to, tutorial, tips, FAQ, or playbook), campaign (a marketing campaign, ad, or brand move).";
+
 function prompts(label: string): ExtractionPrompt[] {
   return [
     {
@@ -48,7 +53,7 @@ function prompts(label: string): ExtractionPrompt[] {
     {
       id: "event",
       entityKind: "market_event",
-      system: `Extract one ${label} market event (product_launch|pricing_change|funding|acquisition|leadership_change|regulatory|campaign|other) with a headline and occurredAt if stated. JSON keys: kind, headline, occurredAt.`,
+      system: `Classify the ${label} text as ONE market event. Pick the SINGLE best kind: ${EVENT_KIND_GUIDE} Use "other" ONLY when nothing above fits. JSON keys: kind, headline, occurredAt (the date it happened if stated, else null).`,
     },
   ];
 }

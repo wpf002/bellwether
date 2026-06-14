@@ -1,4 +1,5 @@
 import type { IndustryPack } from "@bellwether/core";
+import { EVENT_KIND_GUIDE } from "./catalog.js";
 
 /**
  * The reference pack. Phase 1 goes embarrassingly deep on this ONE vertical
@@ -251,8 +252,7 @@ export const saasPack: IndustryPack = {
     {
       id: "saas-event",
       entityKind: "market_event",
-      system:
-        "Extract one market event (product_launch|pricing_change|funding|acquisition|leadership_change|regulatory|campaign|other) with a headline and occurredAt if stated. JSON keys: kind, headline, occurredAt.",
+      system: `Classify the text as ONE B2B-SaaS market event. Pick the SINGLE best kind: ${EVENT_KIND_GUIDE} Use "other" ONLY when nothing above fits. JSON keys: kind, headline, occurredAt (the date it happened if stated, else null).`,
     },
   ],
 };

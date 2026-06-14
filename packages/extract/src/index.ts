@@ -8,4 +8,5 @@ export {
   CompanyListExtraction,
   SentimentExtraction,
   MarketEventExtraction,
+  MARKET_EVENT_KINDS,
 } from "./schemas.js";

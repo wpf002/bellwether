@@ -188,11 +188,21 @@ export function initials(name: string): string {
 export function kindStyle(kind: string): string {
   const map: Record<string, string> = {
     product_launch: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
+    product_update: "bg-teal-50 text-teal-700 ring-1 ring-teal-200",
     pricing_change: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
     funding: "bg-sky-50 text-sky-700 ring-1 ring-sky-200",
     acquisition: "bg-violet-50 text-violet-700 ring-1 ring-violet-200",
+    partnership: "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200",
+    expansion: "bg-lime-50 text-lime-700 ring-1 ring-lime-200",
     leadership_change: "bg-rose-50 text-rose-700 ring-1 ring-rose-200",
+    layoffs: "bg-red-50 text-red-700 ring-1 ring-red-200",
+    earnings: "bg-green-50 text-green-700 ring-1 ring-green-200",
     regulatory: "bg-orange-50 text-orange-700 ring-1 ring-orange-200",
+    legal: "bg-stone-100 text-stone-700 ring-1 ring-stone-200",
+    security_incident: "bg-fuchsia-50 text-fuchsia-700 ring-1 ring-fuchsia-200",
+    research: "bg-blue-50 text-blue-700 ring-1 ring-blue-200",
+    analysis: "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200",
+    guide: "bg-yellow-50 text-yellow-700 ring-1 ring-yellow-200",
     campaign: "bg-pink-50 text-pink-700 ring-1 ring-pink-200",
     other: "bg-slate-100 text-slate-600 ring-1 ring-slate-200",
   };
