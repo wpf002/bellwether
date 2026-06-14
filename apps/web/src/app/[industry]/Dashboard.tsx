@@ -193,14 +193,13 @@ export function Dashboard({
   const shownCompanies = active ? sortedCompanies.filter((c) => inScope(c.name)) : sortedCompanies;
 
   // ---- chart data ----
-  const mindshare: Slice[] = useMemo(() => {
-    const top = shownCompanies.slice(0, 6);
-    const rest = shownCompanies.slice(6);
-    const slices = top.map((c, i) => ({ label: c.name, value: c.mentions, color: PALETTE[i]! }));
-    const restTotal = rest.reduce((s, c) => s + c.mentions, 0);
-    if (restTotal > 0) slices.push({ label: "Other", value: restTotal, color: PALETTE[8]! });
-    return slices;
-  }, [shownCompanies]);
+  const mindshare: Slice[] = useMemo(
+    () =>
+      shownCompanies
+        .slice(0, 7)
+        .map((c, i) => ({ label: c.name, value: c.mentions, color: PALETTE[i]! })),
+    [shownCompanies],
+  );
 
   const sentiment: Slice[] = Object.entries(
     kpiRecord(overview.kpis, (k) => k.entityKind === "sentiment_theme"),
@@ -291,7 +290,7 @@ export function Dashboard({
                 <div className="flex items-center gap-5">
                   <Donut data={mindshare} />
                   <ul className="min-w-0 flex-1 space-y-1.5">
-                    {shownCompanies.slice(0, 6).map((c, i) => (
+                    {shownCompanies.slice(0, 7).map((c, i) => (
                       <li key={c.name} className="flex items-center gap-2 text-sm">
                         <span
                           className="h-2.5 w-2.5 shrink-0 rounded-sm"
