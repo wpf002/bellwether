@@ -5,3 +5,4 @@ export * from "./industry.js";
 export * from "./kpi.js";
 export * from "./quality.js";
 export * from "./tenancy.js";
+export * from "./modules.js";

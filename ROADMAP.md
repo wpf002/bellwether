@@ -167,12 +167,17 @@ use verified live; MRR via /admin/metrics. Live payment needs Stripe wired.)
 
 ## Phase 7 — Advanced modules _(only if validated)_
 
-The flashy GPT directions live here, as bolt-ons — never as the core bet:
+The flashy GPT directions live here, as bolt-ons — never as the core bet.
+Built as deterministic re-slices of existing signals (still citable, no new
+collection, no model judgment):
 
-- Sentiment-driven opportunity map.
-- Competitive-interaction simulation _(explicitly deferred: requires historical
-  data and model accuracy that don't exist early — do not promise it sooner)._
-- Regulatory-compliance dashboard per industry.
+- [x] Sentiment-driven opportunity map: clusters sentiment themes into pain
+      points (gaps = opportunities) vs. strengths, ranked by mention count, each
+      cited. `GET /industries/:id/opportunities`.
+- [x] Regulatory-compliance feed per industry: regulatory market events, newest
+      first, cited. `GET /industries/:id/regulatory`.
+- [ ] Competitive-interaction simulation — **left deferred on purpose.** Needs
+      historical data + model accuracy that don't exist yet; not built.
 
 ---
 
