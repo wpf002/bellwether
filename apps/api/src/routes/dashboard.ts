@@ -8,6 +8,13 @@ const DAYS = (q: unknown): number => {
   return Number.isFinite(n) && n > 0 ? Math.min(n, 365) : 7;
 };
 
+/** Parse a `?companies=a,b,c` competitor watchlist. */
+const COMPANIES = (q: unknown): string[] =>
+  String((q as { companies?: string } | undefined)?.companies ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
 /** Read-only dashboard endpoints (Phase 3). All data carries provenance: every
  *  finding/event/company links back to source records via `citations`/`url`. */
 export async function dashboardRoutes(app: FastifyInstance) {
@@ -21,28 +28,28 @@ export async function dashboardRoutes(app: FastifyInstance) {
     }
   };
 
-  app.get<{ Params: { id: string }; Querystring: { days?: string } }>(
+  app.get<{ Params: { id: string }; Querystring: { days?: string; companies?: string } }>(
     "/industries/:id/overview",
     async (req, reply) => {
       if (!guard(req.params.id, reply)) return;
-      return overview(req.params.id, DAYS(req.query));
+      return overview(req.params.id, DAYS(req.query), COMPANIES(req.query));
     },
   );
 
-  app.get<{ Params: { id: string }; Querystring: { days?: string } }>(
+  app.get<{ Params: { id: string }; Querystring: { days?: string; companies?: string } }>(
     "/industries/:id/digest",
     async (req, reply) => {
       if (!guard(req.params.id, reply)) return;
-      return digestForWindow(req.params.id, DAYS(req.query));
+      return digestForWindow(req.params.id, DAYS(req.query), COMPANIES(req.query));
     },
   );
 
-  app.get<{ Params: { id: string }; Querystring: { limit?: string } }>(
+  app.get<{ Params: { id: string }; Querystring: { limit?: string; companies?: string } }>(
     "/industries/:id/events",
     async (req, reply) => {
       if (!guard(req.params.id, reply)) return;
       const limit = Math.min(Number(req.query.limit) || 50, 200);
-      return eventsFeed(req.params.id, limit);
+      return eventsFeed(req.params.id, limit, COMPANIES(req.query));
     },
   );
 

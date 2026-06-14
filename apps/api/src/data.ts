@@ -2,6 +2,7 @@ import { and, desc, eq, gte, inArray } from "drizzle-orm";
 import { getDb, schema } from "@bellwether/db";
 import {
   computeKpis,
+  filterByCompetitors,
   type EntityKind,
   type KpiResult,
   type Signal,
@@ -58,10 +59,15 @@ export interface DigestResponse extends WeeklyDigest {
   citations: Record<string, string | null>;
 }
 
-/** Computes a digest live ("pull a digest") and attaches citation URLs. */
-export async function digestForWindow(industryId: string, days: number): Promise<DigestResponse> {
+/** Computes a digest live ("pull a digest") and attaches citation URLs.
+ *  `companies` scopes the digest to a competitor watchlist. */
+export async function digestForWindow(
+  industryId: string,
+  days: number,
+  companies: string[] = [],
+): Promise<DigestResponse> {
   const pack = getIndustryPack(industryId);
-  const signals = await signalsInWindow(industryId, days);
+  const signals = filterByCompetitors(await signalsInWindow(industryId, days), companies);
   const end = new Date();
   const digest = buildWeeklyDigest({
     pack,
@@ -84,9 +90,14 @@ export interface EventItem {
   url: string | null;
 }
 
-/** Market-event change feed (newest first) with source links. */
-export async function eventsFeed(industryId: string, limit: number): Promise<EventItem[]> {
-  const signals = (await signalsInWindow(industryId, 3650))
+/** Market-event change feed (newest first) with source links. `companies`
+ *  scopes the feed to events mentioning a competitor watchlist. */
+export async function eventsFeed(
+  industryId: string,
+  limit: number,
+  companies: string[] = [],
+): Promise<EventItem[]> {
+  const signals = filterByCompetitors(await signalsInWindow(industryId, 3650), companies)
     .filter((s) => s.entityKind === "market_event")
     .slice(0, limit);
   const urls = await urlsForRecords(signals.flatMap((s) => s.sourceRecordIds));
@@ -147,12 +158,16 @@ export interface Overview {
 
 /** Market Overview: KPIs + a deterministic narrative (no LLM — counts only, so
  *  every number traces to provenance and the invariant holds). */
-export async function overview(industryId: string, days: number): Promise<Overview> {
+export async function overview(
+  industryId: string,
+  days: number,
+  companies: string[] = [],
+): Promise<Overview> {
   const pack = getIndustryPack(industryId);
-  const signals = await signalsInWindow(industryId, days);
+  const signals = filterByCompetitors(await signalsInWindow(industryId, days), companies);
   const kpis = computeKpis(pack, signals);
 
-  const companies = signals.filter((s) => s.entityKind === "company");
+  const companySignals = signals.filter((s) => s.entityKind === "company");
   const events = signals.filter((s) => s.entityKind === "market_event");
   const complaints = signals.filter(
     (s) => s.entityKind === "sentiment_theme" && s.payload.polarity === "negative",
@@ -173,14 +188,18 @@ export async function overview(industryId: string, days: number): Promise<Overvi
   const narrative =
     `In the last ${days} days, ${pack.label} saw ${events.length} market events` +
     (topKinds ? ` — most commonly ${topKinds}` : "") +
-    `, across ${companies.length} company mentions` +
+    `, across ${companySignals.length} company mentions` +
     (topComplaint ? `. Top buyer complaint: "${topComplaint}".` : ".");
 
   return {
     industryId,
     periodStart: since(days).toISOString(),
     periodEnd: new Date().toISOString(),
-    totals: { companies: companies.length, events: events.length, complaints: complaints.length },
+    totals: {
+      companies: companySignals.length,
+      events: events.length,
+      complaints: complaints.length,
+    },
     kpis,
     narrative,
   };

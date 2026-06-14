@@ -10,4 +10,12 @@ export function getDb(databaseUrl = process.env.DATABASE_URL) {
   return drizzle(_client, { schema });
 }
 
+/** Closes the pooled connection (for graceful shutdown / tests). */
+export async function closeDb(): Promise<void> {
+  if (_client) {
+    await _client.end();
+    _client = null;
+  }
+}
+
 export type Database = ReturnType<typeof getDb>;

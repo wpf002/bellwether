@@ -6,3 +6,5 @@ export * from "./kpi.js";
 export * from "./quality.js";
 export * from "./tenancy.js";
 export * from "./modules.js";
+export * from "./scope.js";
+export * from "./pricing.js";

@@ -57,6 +57,7 @@ export function Dashboard({
 }) {
   const [tab, setTab] = useState<Tab>("overview");
   const [tracked, setTracked] = useState<string[]>([]);
+  const [scoped, setScoped] = useState(false);
   const storeKey = `bellwether:competitors:${industryId}`;
 
   useEffect(() => {
@@ -90,6 +91,13 @@ export function Dashboard({
     [companies, tracked],
   );
 
+  // Client-side competitor scoping (mirrors the API's ?companies= filter).
+  const active = scoped && tracked.length > 0;
+  const inScope = (text: string) =>
+    tracked.some((n) => text.toLowerCase().includes(n.toLowerCase()));
+  const shownEvents = active ? events.filter((e) => inScope(e.headline)) : events;
+  const scopeFindings = (fs: Finding[]) => (active ? fs.filter((f) => inScope(f.claim)) : fs);
+
   return (
     <div className="mt-6">
       <nav className="flex gap-1 border-b">
@@ -112,6 +120,12 @@ export function Dashboard({
             {label}
           </button>
         ))}
+        {tracked.length > 0 && (
+          <label className="ml-auto flex items-center gap-1.5 self-center text-xs text-neutral-600">
+            <input type="checkbox" checked={scoped} onChange={(e) => setScoped(e.target.checked)} />
+            Scope to my competitors ({tracked.length})
+          </label>
+        )}
       </nav>
 
       {tab === "overview" && (
@@ -133,12 +147,12 @@ export function Dashboard({
             <div className="space-y-4">
               <DigestList
                 title="What changed"
-                findings={digest.whatChanged}
+                findings={scopeFindings(digest.whatChanged)}
                 citations={digest.citations}
               />
               <DigestList
                 title="Key players"
-                findings={digest.keyPlayers}
+                findings={scopeFindings(digest.keyPlayers)}
                 citations={digest.citations}
               />
               <DigestList
@@ -207,8 +221,8 @@ export function Dashboard({
       {tab === "feed" && (
         <section className="mt-5">
           <ul className="divide-y">
-            {events.length === 0 && <li className="py-3 text-neutral-500">No events yet.</li>}
-            {events.map((e: EventItem) => (
+            {shownEvents.length === 0 && <li className="py-3 text-neutral-500">No events yet.</li>}
+            {shownEvents.map((e: EventItem) => (
               <li key={e.signalId} className="flex gap-3 py-3">
                 <span className="mt-0.5 shrink-0 rounded bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
                   {e.kind.replace(/_/g, " ")}
