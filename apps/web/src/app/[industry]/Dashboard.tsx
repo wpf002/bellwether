@@ -193,7 +193,7 @@ export function Dashboard({
 
           {/* Visualization row */}
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-            <Panel title="Competitive Mindshare">
+            <Panel title="Most Mentioned">
               {mindshare.length === 0 ? (
                 <p className="text-sm text-ink-400">No company mentions yet.</p>
               ) : (

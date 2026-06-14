@@ -12,7 +12,7 @@ import type { IndustryPack, KpiDef, ExtractionPrompt, SourceDef } from "@bellwet
 const STANDARD_KPIS: KpiDef[] = [
   {
     id: "share_of_voice",
-    label: "Competitive Mindshare",
+    label: "Most Mentioned",
     aggregation: "share_of_voice",
     entityKind: "company",
     field: "name",

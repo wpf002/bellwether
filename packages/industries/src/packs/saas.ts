@@ -215,7 +215,7 @@ export const saasPack: IndustryPack = {
   kpis: [
     {
       id: "share_of_voice",
-      label: "Competitive Mindshare",
+      label: "Most Mentioned",
       aggregation: "share_of_voice",
       entityKind: "company",
       field: "name",
