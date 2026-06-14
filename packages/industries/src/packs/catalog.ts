@@ -61,6 +61,10 @@ function makePack(o: {
   queries: string[];
   /** TechCrunch tag (techcrunch.com/tag/<tag>/feed/) if one exists for the topic. */
   tcTag?: string;
+  /** Industry Dive trade-news site, e.g. "bankingdive" → bankingdive.com/feeds/news/. */
+  diveSite?: string;
+  /** Display name for the Industry Dive feed, e.g. "Banking Dive". */
+  diveName?: string;
 }): IndustryPack {
   const sources: SourceDef[] = o.queries.map((q, i) => ({
     id: `${o.id}-hn${i + 1}`,
@@ -79,6 +83,21 @@ function makePack(o: {
       kind: "rss",
       adapter: "rss-news",
       url: `https://techcrunch.com/tag/${o.tcTag}/feed/`,
+      mayContainPersonalData: false,
+      extractAs: ["market_event", "company"],
+    });
+  }
+
+  // Authoritative trade-news feed (Industry Dive) — names many real companies,
+  // so it's the deepest single source of company + market_event signal per
+  // vertical. All Industry Dive feeds are robots-permitted (verified).
+  if (o.diveSite) {
+    sources.push({
+      id: `${o.id}-dive`,
+      label: o.diveName ?? `${o.label} trade news`,
+      kind: "rss",
+      adapter: "rss-news",
+      url: `https://www.${o.diveSite}.com/feeds/news/`,
       mayContainPersonalData: false,
       extractAs: ["market_event", "company"],
     });
@@ -115,6 +134,8 @@ export const catalogPacks: IndustryPack[] = [
     description: "Digital banking, payments, lending, and financial infrastructure.",
     queries: ["fintech", "payments startup", "neobank"],
     tcTag: "fintech",
+    diveSite: "bankingdive",
+    diveName: "Banking Dive",
   },
   {
     id: "cybersecurity",
@@ -122,12 +143,16 @@ export const catalogPacks: IndustryPack[] = [
     description: "Security platforms, threat detection, identity, and compliance tooling.",
     queries: ["cybersecurity", "data breach", "ransomware"],
     tcTag: "cybersecurity",
+    diveSite: "cybersecuritydive",
+    diveName: "Cybersecurity Dive",
   },
   {
     id: "devtools",
     label: "Developer Tools",
     description: "IDEs, CI/CD, observability, and the software development toolchain.",
     queries: ["developer tools", "CI/CD", "observability"],
+    diveSite: "ciodive",
+    diveName: "CIO Dive",
   },
   {
     id: "ai-infra",
@@ -135,6 +160,8 @@ export const catalogPacks: IndustryPack[] = [
     description: "Foundation models, inference, vector databases, and the AI stack.",
     queries: ["LLM inference", "AI infrastructure", "vector database"],
     tcTag: "artificial-intelligence",
+    diveSite: "ciodive",
+    diveName: "CIO Dive",
   },
   {
     id: "data-analytics",
@@ -142,6 +169,8 @@ export const catalogPacks: IndustryPack[] = [
     description: "Warehouses, BI, pipelines, and the modern data platform.",
     queries: ["data warehouse", "business intelligence", "data pipeline"],
     tcTag: "enterprise",
+    diveSite: "ciodive",
+    diveName: "CIO Dive",
   },
   {
     id: "healthtech",
@@ -149,6 +178,8 @@ export const catalogPacks: IndustryPack[] = [
     description: "Digital health, clinical software, and health data platforms.",
     queries: ["digital health", "healthtech", "telemedicine"],
     tcTag: "health",
+    diveSite: "healthcaredive",
+    diveName: "Healthcare Dive",
   },
   {
     id: "martech",
@@ -156,18 +187,36 @@ export const catalogPacks: IndustryPack[] = [
     description: "CRM, automation, analytics, and the marketing software stack.",
     queries: ["marketing software", "CRM platform", "marketing automation"],
     tcTag: "marketing-tech",
+    diveSite: "marketingdive",
+    diveName: "Marketing Dive",
   },
   {
     id: "hrtech",
     label: "HR Tech",
     description: "Hiring, payroll, people analytics, and workforce platforms.",
-    queries: ["HR software", "hiring software", "payroll software"],
+    queries: [
+      "HR software",
+      "hiring software",
+      "payroll software",
+      "applicant tracking",
+      "people analytics",
+    ],
+    diveSite: "hrdive",
+    diveName: "HR Dive",
   },
   {
     id: "proptech",
     label: "Prop Tech",
     description: "Real-estate software, property management, and construction tech.",
-    queries: ["proptech", "real estate software", "property management software"],
+    queries: [
+      "proptech",
+      "real estate software",
+      "property management software",
+      "construction tech",
+      "real estate startup",
+    ],
+    diveSite: "constructiondive",
+    diveName: "Construction Dive",
   },
   {
     id: "edtech",
@@ -175,6 +224,8 @@ export const catalogPacks: IndustryPack[] = [
     description: "Learning platforms, courseware, and education software.",
     queries: ["edtech", "online learning platform", "education software"],
     tcTag: "edtech",
+    diveSite: "highereddive",
+    diveName: "Higher Ed Dive",
   },
   {
     id: "cloud",
@@ -182,6 +233,8 @@ export const catalogPacks: IndustryPack[] = [
     description: "Compute, storage, networking, and cloud platform providers.",
     queries: ["cloud computing", "kubernetes", "serverless"],
     tcTag: "cloud-computing",
+    diveSite: "ciodive",
+    diveName: "CIO Dive",
   },
   {
     id: "crypto",
@@ -189,6 +242,8 @@ export const catalogPacks: IndustryPack[] = [
     description: "Digital assets, exchanges, wallets, and blockchain infrastructure.",
     queries: ["crypto exchange", "blockchain", "stablecoin"],
     tcTag: "crypto",
+    diveSite: "bankingdive",
+    diveName: "Banking Dive",
   },
   {
     id: "gaming",
@@ -203,6 +258,8 @@ export const catalogPacks: IndustryPack[] = [
     description: "Industrial and service robotics, automation, and hardware.",
     queries: ["robotics", "industrial automation", "autonomous robots"],
     tcTag: "robotics",
+    diveSite: "manufacturingdive",
+    diveName: "Manufacturing Dive",
   },
   {
     id: "biotech",
@@ -210,6 +267,8 @@ export const catalogPacks: IndustryPack[] = [
     description: "Drug discovery, lab software, and life-sciences platforms.",
     queries: ["biotech", "drug discovery", "genomics"],
     tcTag: "biotech",
+    diveSite: "biopharmadive",
+    diveName: "BioPharma Dive",
   },
   {
     id: "climate",
@@ -217,17 +276,29 @@ export const catalogPacks: IndustryPack[] = [
     description: "Energy, carbon, and sustainability technology.",
     queries: ["climate tech", "clean energy", "carbon capture"],
     tcTag: "climate",
+    diveSite: "utilitydive",
+    diveName: "Utility Dive",
   },
   {
     id: "logistics",
     label: "Logistics & Supply Chain",
     description: "Freight, fulfillment, and supply-chain software.",
-    queries: ["logistics software", "supply chain", "freight tech"],
+    queries: [
+      "logistics software",
+      "supply chain",
+      "freight tech",
+      "warehouse automation",
+      "last mile delivery",
+    ],
+    diveSite: "supplychaindive",
+    diveName: "Supply Chain Dive",
   },
   {
     id: "legaltech",
     label: "Legal Tech",
     description: "Contract, compliance, and practice-management software.",
-    queries: ["legal tech", "contract software", "compliance software"],
+    queries: ["legal tech", "contract software", "compliance software", "legal AI", "e-discovery"],
+    diveSite: "legaldive",
+    diveName: "Legal Dive",
   },
 ].map(makePack);

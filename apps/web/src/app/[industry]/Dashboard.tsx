@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import type { CompanyItem, Digest, EventItem, KpiResult, Overview } from "@/lib/api";
+import type { CompanyItem, Digest, EventItem, KpiResult, Overview, TrendPoint } from "@/lib/api";
 import { humanize, kindStyle, logoFor, hostOf, initials } from "@/lib/format";
-import { Donut, BarList, PALETTE, type Slice } from "@/components/Charts";
+import { Donut, BarList, Sparkline, PALETTE, type Slice } from "@/components/Charts";
 
 type Tab = "overview" | "competitors" | "feed";
 
@@ -55,30 +55,82 @@ function Cite({ ids, citations }: { ids: string[]; citations: Record<string, str
   );
 }
 
-function Panel({ title, count, children }: { title: string; count?: number; children: ReactNode }) {
+function Panel({
+  title,
+  count,
+  hint,
+  children,
+}: {
+  title: string;
+  count?: number;
+  hint?: string;
+  children: ReactNode;
+}) {
   return (
-    <div className="card p-5">
-      <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-ink">
-        {title}
+    <div className="card p-4">
+      <div className="mb-3 flex items-center gap-2 border-b border-slate-100 pb-2.5">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-ink-500">{title}</h3>
         {count != null && <span className="chip bg-slate-100 text-ink-400">{count}</span>}
-      </h3>
+        {hint && <span className="ml-auto text-[11px] text-ink-300">{hint}</span>}
+      </div>
       {children}
+    </div>
+  );
+}
+
+/** A single HUD readout: micro-label + monospace value, optional sparkline. */
+function Hud({
+  label,
+  value,
+  series,
+  color = "#4f46e5",
+  accent,
+}: {
+  label: string;
+  value: number | string;
+  series?: number[];
+  color?: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="flex flex-col justify-between gap-2 px-4 py-3">
+      <div className="text-[10px] font-medium uppercase tracking-wider text-ink-400">{label}</div>
+      {series ? (
+        <div className="flex items-end justify-between gap-2">
+          <span className={`font-mono text-2xl font-semibold tabular-nums text-ink`}>{value}</span>
+          <Sparkline data={series} color={color} width={92} height={30} />
+        </div>
+      ) : (
+        <span
+          className={`font-mono text-2xl font-semibold tabular-nums ${
+            accent ? "text-accent-600" : "text-ink"
+          }`}
+        >
+          {value}
+        </span>
+      )}
     </div>
   );
 }
 
 export function Dashboard({
   industryId,
+  label,
+  sourceCount,
   overview,
   companies,
   events,
   digest,
+  trends,
 }: {
   industryId: string;
+  label: string;
+  sourceCount: number;
   overview: Overview;
   companies: CompanyItem[];
   events: EventItem[];
   digest: Digest | null;
+  trends: TrendPoint[];
 }) {
   const [tab, setTab] = useState<Tab>("overview");
   const [tracked, setTracked] = useState<string[]>([]);
@@ -145,6 +197,12 @@ export function Dashboard({
     .slice(0, 7)
     .map(([k, v], i) => ({ label: humanize(k), value: v, color: PALETTE[i]! }));
 
+  // ---- trend series (14d, zero-filled; fills in as the scheduler runs) ----
+  const eventSeries = trends.map((t) => t.events);
+  const companySeries = trends.map((t) => t.companies);
+  const complaintSeries = trends.map((t) => t.complaints);
+  const distinctCompanies = companies.length;
+
   const tabs: [Tab, string][] = [
     ["overview", "Market Overview"],
     ["competitors", "Competitor Tracker"],
@@ -152,21 +210,36 @@ export function Dashboard({
   ];
 
   return (
-    <div className="mt-6">
-      <div className="mb-6 grid grid-cols-3 gap-3 sm:max-w-xl">
-        <Stat label="Market Events" value={overview.totals.events} />
-        <Stat label="Company Mentions" value={overview.totals.companies} />
-        <Stat label="Buyer Complaints" value={overview.totals.complaints} accent />
+    <div className="mt-5">
+      {/* HUD: dense terminal-style metrics bar */}
+      <div className="grid grid-cols-2 divide-x divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white sm:grid-cols-3 lg:grid-cols-6">
+        <Hud label="Market Events" value={overview.totals.events} series={eventSeries} />
+        <Hud
+          label="Company Mentions"
+          value={overview.totals.companies}
+          series={companySeries}
+          color="#0ea5e9"
+        />
+        <Hud label="Companies Tracked" value={distinctCompanies} />
+        <Hud
+          label="Buyer Complaints"
+          value={overview.totals.complaints}
+          series={complaintSeries}
+          color="#ef4444"
+          accent
+        />
+        <Hud label="Live Sources" value={sourceCount} />
+        <Hud label="Watchlist" value={tracked.length} />
       </div>
 
-      <nav className="flex items-center gap-6 border-b border-slate-200">
-        {tabs.map(([key, label]) => (
+      <nav className="mt-5 flex items-center gap-6 border-b border-slate-200">
+        {tabs.map(([key, tabLabel]) => (
           <button
             key={key}
             onClick={() => setTab(key)}
             className={`tab ${tab === key ? "tab-active" : "tab-idle"}`}
           >
-            {label}
+            {tabLabel}
           </button>
         ))}
         {tracked.length > 0 && (
@@ -186,13 +259,13 @@ export function Dashboard({
       </nav>
 
       {tab === "overview" && (
-        <section className="mt-6 space-y-6">
-          <p className="card border-l-4 border-l-brand-500 p-5 text-[15px] leading-relaxed text-ink-700">
+        <section className="mt-5 space-y-5">
+          <p className="card border-l-4 border-l-brand-500 p-4 text-[15px] leading-relaxed text-ink-700">
             {overview.narrative}
           </p>
 
           {/* Visualization row */}
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <Panel title="Most Mentioned">
               {mindshare.length === 0 ? (
                 <p className="text-sm text-ink-400">No company mentions yet.</p>
@@ -208,7 +281,7 @@ export function Dashboard({
                         />
                         <CompanyLogo name={c.name} url={c.urls[0]} size={18} />
                         <span className="min-w-0 flex-1 truncate text-ink-700">{c.name}</span>
-                        <span className="shrink-0 tabular-nums text-ink-400">
+                        <span className="shrink-0 font-mono tabular-nums text-ink-400">
                           {Math.round(c.share * 100)}%
                         </span>
                       </li>
@@ -235,8 +308,17 @@ export function Dashboard({
             </Panel>
           </div>
 
+          {/* Momentum strip — daily signal volume over 14 days */}
+          <Panel title="Signal Momentum" hint="daily volume · fills in as the scheduler runs">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <Momentum label="Events / day" series={eventSeries} color="#4f46e5" />
+              <Momentum label="Mentions / day" series={companySeries} color="#0ea5e9" />
+              <Momentum label="Complaints / day" series={complaintSeries} color="#ef4444" />
+            </div>
+          </Panel>
+
           {/* Content row */}
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Panel title="What Changed" count={shownEvents.length}>
               <ul className="divide-y divide-slate-100">
                 {shownEvents.length === 0 && (
@@ -270,7 +352,7 @@ export function Dashboard({
       )}
 
       {tab === "competitors" && (
-        <section className="mt-6">
+        <section className="mt-5">
           <p className="mb-4 text-sm text-ink-500">
             Check companies to add them to your watchlist (saved in this browser). The{" "}
             <span className="font-medium text-ink-700">Only My Watchlist</span> toggle then scopes
@@ -302,7 +384,7 @@ export function Dashboard({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-3">
                       <span className="truncate font-medium text-ink">{c.name}</span>
-                      <span className="shrink-0 text-xs text-ink-400">
+                      <span className="shrink-0 font-mono text-xs tabular-nums text-ink-400">
                         {c.mentions} mentions · {Math.round(c.share * 100)}%
                       </span>
                     </div>
@@ -331,7 +413,7 @@ export function Dashboard({
       )}
 
       {tab === "feed" && (
-        <section className="mt-6">
+        <section className="mt-5">
           <ul className="space-y-1">
             {shownEvents.length === 0 && (
               <li className="card p-5 text-ink-500">No events in this window.</li>
@@ -342,6 +424,26 @@ export function Dashboard({
           </ul>
         </section>
       )}
+
+      <p className="mt-6 text-center text-[11px] text-ink-300">
+        {label} · every figure traces to a cited source record
+      </p>
+    </div>
+  );
+}
+
+/** A labeled sparkline tile with its current total. */
+function Momentum({ label, series, color }: { label: string; series: number[]; color: string }) {
+  const total = series.reduce((a, b) => a + b, 0);
+  return (
+    <div className="rounded-lg border border-slate-100 bg-slate-50/40 p-3">
+      <div className="mb-1.5 flex items-baseline justify-between">
+        <span className="text-[10px] font-medium uppercase tracking-wider text-ink-400">
+          {label}
+        </span>
+        <span className="font-mono text-sm font-semibold tabular-nums text-ink-700">{total}</span>
+      </div>
+      <Sparkline data={series.length ? series : [0]} color={color} width={260} height={40} />
     </div>
   );
 }
@@ -368,7 +470,9 @@ function EventRow({ e, feed }: { e: EventItem; feed?: boolean }) {
         )}
         <div className="mt-1 flex items-center gap-2 text-xs text-ink-400">
           {host && <CompanyLogoless host={host} />}
-          <span>{new Date(e.detectedAt).toLocaleDateString()}</span>
+          <span className="font-mono tabular-nums">
+            {new Date(e.detectedAt).toLocaleDateString()}
+          </span>
         </div>
       </div>
     </li>
@@ -381,16 +485,5 @@ function CompanyLogoless({ host }: { host: string }) {
       <img src={logoFor(host) ?? ""} alt="" width={12} height={12} className="h-3 w-3 rounded-sm" />
       {host}
     </span>
-  );
-}
-
-function Stat({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
-  return (
-    <div className="stat">
-      <div className={`text-2xl font-semibold ${accent ? "text-accent-600" : "text-ink"}`}>
-        {value}
-      </div>
-      <div className="mt-0.5 text-xs font-medium text-ink-400">{label}</div>
-    </div>
   );
 }

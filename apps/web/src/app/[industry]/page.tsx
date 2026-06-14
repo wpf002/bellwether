@@ -6,12 +6,13 @@ export const dynamic = "force-dynamic";
 
 export default async function IndustryPage({ params }: { params: Promise<{ industry: string }> }) {
   const { industry } = await params;
-  const [industries, overview, companies, events, digest] = await Promise.all([
+  const [industries, overview, companies, events, digest, trends] = await Promise.all([
     api.industries(),
     api.overview(industry),
     api.companies(industry),
     api.events(industry, 100),
     api.digest(industry),
+    api.trends(industry, 14),
   ]);
 
   const meta = industries.find((i) => i.id === industry);
@@ -42,10 +43,13 @@ export default async function IndustryPage({ params }: { params: Promise<{ indus
 
       <Dashboard
         industryId={industry}
+        label={meta?.label ?? industry}
+        sourceCount={meta?.sourceCount ?? 0}
         overview={overview}
         companies={companies}
         events={events}
         digest={digest}
+        trends={trends}
       />
     </main>
   );

@@ -27,7 +27,7 @@ export const ecommercePack: IndustryPack = {
       adapter: "rss-news",
       url: "https://www.retaildive.com/feeds/news/",
       mayContainPersonalData: false,
-      extractAs: ["market_event"],
+      extractAs: ["market_event", "company"],
     },
     {
       id: "ecom-modernretail",
@@ -36,7 +36,7 @@ export const ecommercePack: IndustryPack = {
       adapter: "rss-news",
       url: "https://www.modernretail.co/feed/",
       mayContainPersonalData: false,
-      extractAs: ["market_event"],
+      extractAs: ["market_event", "company"],
     },
     {
       id: "ecom-dc360",
@@ -45,7 +45,7 @@ export const ecommercePack: IndustryPack = {
       adapter: "rss-news",
       url: "https://www.digitalcommerce360.com/feed/",
       mayContainPersonalData: false,
-      extractAs: ["market_event"],
+      extractAs: ["market_event", "company"],
     },
     {
       id: "ecom-glossy",
@@ -54,7 +54,25 @@ export const ecommercePack: IndustryPack = {
       adapter: "rss-news",
       url: "https://www.glossy.co/feed/",
       mayContainPersonalData: false,
-      extractAs: ["market_event"],
+      extractAs: ["market_event", "company"],
+    },
+    {
+      id: "ecom-grocerydive",
+      label: "Grocery Dive",
+      kind: "rss",
+      adapter: "rss-news",
+      url: "https://www.grocerydive.com/feeds/news/",
+      mayContainPersonalData: false,
+      extractAs: ["company", "market_event"],
+    },
+    {
+      id: "ecom-restaurantdive",
+      label: "Restaurant Dive",
+      kind: "rss",
+      adapter: "rss-news",
+      url: "https://www.restaurantdive.com/feeds/news/",
+      mayContainPersonalData: false,
+      extractAs: ["company", "market_event"],
     },
     // --- News with company profiles → company + market events ---
     {

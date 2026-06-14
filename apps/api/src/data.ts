@@ -147,6 +147,38 @@ export async function companiesView(industryId: string, days: number): Promise<C
     .sort((a, b) => b.mentions - a.mentions);
 }
 
+export interface TrendPoint {
+  date: string; // YYYY-MM-DD
+  events: number;
+  companies: number;
+  complaints: number;
+}
+
+/** Daily signal volume over the window — the backing series for sparklines.
+ *  Bucketed by detection date (`signal.createdAt`); the series is continuous
+ *  (zero-filled) and grows as the daily scheduler captures more days. */
+export async function trendsForWindow(
+  industryId: string,
+  days: number,
+  companies: string[] = [],
+): Promise<TrendPoint[]> {
+  const signals = filterByCompetitors(await signalsInWindow(industryId, days), companies);
+  const buckets = new Map<string, { events: number; companies: number; complaints: number }>();
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86_400_000).toISOString().slice(0, 10);
+    buckets.set(d, { events: 0, companies: 0, complaints: 0 });
+  }
+  for (const s of signals) {
+    const b = buckets.get(s.createdAt.slice(0, 10));
+    if (!b) continue;
+    if (s.entityKind === "market_event") b.events += 1;
+    else if (s.entityKind === "company") b.companies += 1;
+    else if (s.entityKind === "sentiment_theme" && s.payload.polarity === "negative")
+      b.complaints += 1;
+  }
+  return [...buckets.entries()].map(([date, v]) => ({ date, ...v }));
+}
+
 export interface Overview {
   industryId: string;
   periodStart: string;

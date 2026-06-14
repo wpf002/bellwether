@@ -86,6 +86,50 @@ export function Donut({
   );
 }
 
+/** Compact area sparkline for a single series (e.g. daily event volume). */
+export function Sparkline({
+  data,
+  width = 132,
+  height = 36,
+  color = "#4f46e5",
+}: {
+  data: number[];
+  width?: number;
+  height?: number;
+  color?: string;
+}) {
+  const pad = 2;
+  const n = data.length;
+  const max = Math.max(1, ...data);
+  const dx = n > 1 ? (width - pad * 2) / (n - 1) : 0;
+  const y = (v: number) => height - pad - (v / max) * (height - pad * 2);
+  const pts = data.map((v, i) => [pad + i * dx, y(v)] as const);
+  const line = pts.map(([px, py]) => `${px.toFixed(1)},${py.toFixed(1)}`).join(" ");
+  const area = `${pad},${height - pad} ${line} ${(pad + (n - 1) * dx).toFixed(1)},${height - pad}`;
+  const last = pts[pts.length - 1];
+  const gid = `spark-${color.replace("#", "")}`;
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} className="shrink-0">
+      <defs>
+        <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity={0.22} />
+          <stop offset="100%" stopColor={color} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <polygon points={area} fill={`url(#${gid})`} />
+      <polyline
+        points={line}
+        fill="none"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      {last && <circle cx={last[0]} cy={last[1]} r={2} fill={color} />}
+    </svg>
+  );
+}
+
 /** Horizontal labeled bars (e.g. sentiment mix, event mix). */
 export function BarList({ data }: { data: Slice[] }) {
   const max = Math.max(1, ...data.map((d) => d.value));

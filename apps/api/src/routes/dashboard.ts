@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { getDb, sourceHealth } from "@bellwether/db";
 import { getIndustryPack } from "@bellwether/industries";
-import { companiesView, digestForWindow, eventsFeed, overview } from "../data.js";
+import { companiesView, digestForWindow, eventsFeed, overview, trendsForWindow } from "../data.js";
 
 const DAYS = (q: unknown): number => {
   const n = Number((q as { days?: string } | undefined)?.days);
@@ -58,6 +58,14 @@ export async function dashboardRoutes(app: FastifyInstance) {
     async (req, reply) => {
       if (!guard(req.params.id, reply)) return;
       return companiesView(req.params.id, DAYS(req.query));
+    },
+  );
+
+  app.get<{ Params: { id: string }; Querystring: { days?: string; companies?: string } }>(
+    "/industries/:id/trends",
+    async (req, reply) => {
+      if (!guard(req.params.id, reply)) return;
+      return trendsForWindow(req.params.id, DAYS(req.query), COMPANIES(req.query));
     },
   );
 

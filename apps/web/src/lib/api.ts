@@ -46,6 +46,13 @@ export interface CompanyItem {
   urls: string[];
 }
 
+export interface TrendPoint {
+  date: string;
+  events: number;
+  companies: number;
+  complaints: number;
+}
+
 export interface Finding {
   claim: string;
   sourceRecordIds: string[];
@@ -83,4 +90,5 @@ export const api = {
     get<CompanyItem[]>(`/industries/${id}/companies?days=${days}`, []),
   digest: (id: string, days = 7) =>
     get<Digest | null>(`/industries/${id}/digest?days=${days}`, null),
+  trends: (id: string, days = 14) => get<TrendPoint[]>(`/industries/${id}/trends?days=${days}`, []),
 };
