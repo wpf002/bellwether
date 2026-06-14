@@ -21,6 +21,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <Link href="/" className="hidden hover:text-white sm:inline">
                 Industries
               </Link>
+              <Link href="/watchlist" className="hidden hover:text-white sm:inline">
+                Watchlist
+              </Link>
+              <Link href="/methodology" className="hidden hover:text-white sm:inline">
+                Methodology
+              </Link>
+              <Link href="/pricing" className="hidden hover:text-white sm:inline">
+                Pricing
+              </Link>
               <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white ring-1 ring-white/20">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                 Live
