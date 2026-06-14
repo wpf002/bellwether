@@ -21,3 +21,16 @@ export type {
   QualitySnapshotRow,
   DigestListItem,
 } from "./feedback.js";
+export {
+  hashApiKey,
+  generateApiKey,
+  authenticate,
+  createOrg,
+  createApiKey,
+  orgEntitlements,
+  isEntitled,
+  subscribe,
+  recordAudit,
+  platformMetrics,
+} from "./accounts.js";
+export type { AuthContext, SignupResult, PlatformMetrics } from "./accounts.js";

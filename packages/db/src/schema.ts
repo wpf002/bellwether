@@ -125,3 +125,86 @@ export const qualitySnapshots = pgTable(
   },
   (t) => ({ byIndustry: index("quality_industry_idx").on(t.industryId) }),
 );
+
+// ---- Phase 6: multi-tenant accounts, access, billing ----
+// The intelligence (signals/digests) is shared catalog data per vertical — these
+// tables govern WHO can access it and on what plan, not who owns the data.
+
+export const orgs = pgTable("orgs", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  plan: text("plan").notNull().default("free"), // 'free' | 'pro' | 'enterprise'
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  canceledAt: timestamp("canceled_at", { withTimezone: true }), // for churn/MRR
+});
+
+export const users = pgTable("users", {
+  id: text("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  name: text("name"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const memberships = pgTable(
+  "memberships",
+  {
+    id: text("id").primaryKey(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => orgs.id),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    role: text("role").notNull().default("member"), // owner|admin|member|viewer
+  },
+  (t) => ({ byOrg: index("memberships_org_idx").on(t.orgId) }),
+);
+
+export const apiKeys = pgTable(
+  "api_keys",
+  {
+    id: text("id").primaryKey(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => orgs.id),
+    hashedKey: text("hashed_key").notNull().unique(), // sha256 of the secret
+    prefix: text("prefix").notNull(), // first chars, for display
+    name: text("name"),
+    role: text("role").notNull().default("member"), // role this key acts as
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  },
+  (t) => ({ byHash: uniqueIndex("api_keys_hash_idx").on(t.hashedKey) }),
+);
+
+/** Which industries an org is entitled to (subscription scope). */
+export const subscriptions = pgTable(
+  "subscriptions",
+  {
+    id: text("id").primaryKey(),
+    orgId: text("org_id")
+      .notNull()
+      .references(() => orgs.id),
+    industryId: text("industry_id")
+      .notNull()
+      .references(() => industries.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({ byOrg: uniqueIndex("subscriptions_org_industry_idx").on(t.orgId, t.industryId) }),
+);
+
+/** Audit log of privileged actions, for accountability. */
+export const auditLog = pgTable(
+  "audit_log",
+  {
+    id: text("id").primaryKey(),
+    orgId: text("org_id"),
+    actor: text("actor"), // api key prefix / user id
+    action: text("action").notNull(),
+    target: text("target"),
+    detail: jsonb("detail"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({ byOrg: index("audit_org_idx").on(t.orgId) }),
+);

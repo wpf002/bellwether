@@ -132,7 +132,7 @@ Goal: get smarter with use; this is the defensibility.
 - [x] Citation layer enforced, not just modeled: `assertCited` throws on any
       uncited finding at the digest boundary (provenance is now a hard contract).
 - [x] Human-review/ship gate: digests are `draft` until reviewed; `POST
-    /digests/:id/ship` records reviewer + timestamp; `GET /industries/:id/digests`
+/digests/:id/ship` records reviewer + timestamp; `GET /industries/:id/digests`
       lists status.
 - [x] Feedback loop: `POST /feedback` (useful / not_useful / acted) →
       `sourcePriority` ranks sources by yield + feedback (what to double down on
@@ -149,9 +149,21 @@ coverage 93%, useful 50%).
 
 Goal: turn it into a business.
 
-- Multi-tenant, auth, org/workspace model, billing.
-- Rate/usage limits, audit logs, role-based access.
-- Deployment to Railway (api, worker, web, Postgres, Redis), prod observability.
+- [x] Multi-tenant accounts: orgs / users / memberships, API-key auth (sha256,
+      never stored plaintext), RBAC (owner>admin>member>viewer), audit log.
+      (Intelligence is shared catalog data; tenancy governs access, not data.)
+- [x] Plan-based billing model + entitlements: free/pro/enterprise with industry
+      caps + per-plan rate limits; MRR/churn computed from plan + cancel state.
+      Stripe is a drop-in (webhook → set `orgs.plan`/`canceled_at`).
+- [x] Rate/usage limits (per-plan, per-org), audit logs, role guards on
+      mutations (feedback/ship), entitlement checks per industry.
+- [x] Self-serve onboarding (`POST /signup` → org + key), key/subscription mgmt,
+      `/admin/metrics` (MRR, orgs by plan, churn, coverage) gated by ADMIN_TOKEN.
+- [~] Railway deploy + prod observability: documented in `DEPLOY.md` (5 services + Postgres/Redis, env, pino logs, metrics endpoints). Actual provisioning
+  needs a Railway account; not run here.
+
+Exit: a stranger can sign up and pay; MRR instrumented. ✓ (signup→key→subscribe→
+use verified live; MRR via /admin/metrics. Live payment needs Stripe wired.)
 
 ## Phase 7 — Advanced modules _(only if validated)_
 

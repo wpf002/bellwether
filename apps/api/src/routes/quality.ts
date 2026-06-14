@@ -8,9 +8,11 @@ import {
   qualityHistory,
   listDigests,
   shipDigest,
+  recordAudit,
   type FeedbackKind,
 } from "@bellwether/db";
 import { getIndustryPack } from "@bellwether/industries";
+import { requireRole, requireEntitlement } from "../auth.js";
 
 const KNOWN_KINDS: FeedbackKind[] = ["useful", "not_useful", "acted"];
 
@@ -36,12 +38,13 @@ export async function qualityRoutes(app: FastifyInstance) {
       sourceId?: string;
       note?: string;
     };
-  }>("/feedback", async (req, reply) => {
+  }>("/feedback", { preHandler: requireRole("member") }, async (req, reply) => {
     const b = req.body ?? {};
     if (!b.industryId || !guard(b.industryId, reply)) return;
     if (!b.kind || !KNOWN_KINDS.includes(b.kind as FeedbackKind)) {
       return reply.code(400).send({ error: `kind must be one of ${KNOWN_KINDS.join(", ")}` });
     }
+    if (!(await requireEntitlement(req, reply, b.industryId))) return;
     const id = await recordFeedback(getDb(), {
       industryId: b.industryId,
       kind: b.kind as FeedbackKind,
@@ -49,6 +52,13 @@ export async function qualityRoutes(app: FastifyInstance) {
       digestId: b.digestId,
       sourceId: b.sourceId,
       note: b.note,
+    });
+    await recordAudit(getDb(), {
+      orgId: req.auth!.orgId,
+      actor: req.auth!.keyPrefix,
+      action: "feedback.create",
+      target: b.industryId,
+      detail: { kind: b.kind },
     });
     return reply.code(201).send({ id });
   });
@@ -77,12 +87,19 @@ export async function qualityRoutes(app: FastifyInstance) {
     return listDigests(getDb(), req.params.id);
   });
 
-  // The human-review gate: a digest is "draft" until a reviewer ships it.
+  // The human-review gate: a digest is "draft" until a reviewer ships it (admin+).
   app.post<{ Params: { id: string }; Body: { reviewedBy?: string } }>(
     "/digests/:id/ship",
+    { preHandler: requireRole("admin") },
     async (req, reply) => {
       const ok = await shipDigest(getDb(), req.params.id, req.body?.reviewedBy);
       if (!ok) return reply.code(404).send({ error: "unknown digest" });
+      await recordAudit(getDb(), {
+        orgId: req.auth!.orgId,
+        actor: req.auth!.keyPrefix,
+        action: "digest.ship",
+        target: req.params.id,
+      });
       return { id: req.params.id, status: "shipped" };
     },
   );
