@@ -113,23 +113,50 @@ export async function eventsFeed(
 
 export interface CompanyItem {
   name: string;
+  /** The company's OWN domain (LLM-extracted), for a correct logo — not the
+   *  source article's domain. Null when the extraction didn't yield one. */
+  domain: string | null;
   mentions: number;
   share: number;
   urls: string[];
 }
 
-/** Companies seen in the window, with share-of-voice and source links. */
+/** Normalize an extracted domain to a bare host, or null if implausible. */
+function cleanDomain(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  let d = raw.trim().toLowerCase();
+  if (!d) return null;
+  d = d
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .split("/")[0]!;
+  // must look like a real domain: label.tld, no spaces
+  if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(d)) return null;
+  return d;
+}
+
+/** Companies seen in the window, with share-of-voice, the company's own domain
+ *  (for a correct logo), and source links. */
 export async function companiesView(industryId: string, days: number): Promise<CompanyItem[]> {
   const signals = (await signalsInWindow(industryId, days)).filter(
     (s) => s.entityKind === "company",
   );
   const urls = await urlsForRecords(signals.flatMap((s) => s.sourceRecordIds));
-  const byName = new Map<string, { mentions: number; urls: Set<string> }>();
+  const byName = new Map<
+    string,
+    { mentions: number; urls: Set<string>; domains: Map<string, number> }
+  >();
   for (const s of signals) {
     const name = String(s.payload.name ?? "").trim();
     if (!name) continue;
-    const entry = byName.get(name) ?? { mentions: 0, urls: new Set<string>() };
+    const entry = byName.get(name) ?? {
+      mentions: 0,
+      urls: new Set<string>(),
+      domains: new Map<string, number>(),
+    };
     entry.mentions += 1;
+    const dom = cleanDomain(s.payload.domain);
+    if (dom) entry.domains.set(dom, (entry.domains.get(dom) ?? 0) + 1);
     for (const id of s.sourceRecordIds) {
       const u = urls[id];
       if (u) entry.urls.add(u);
@@ -140,6 +167,7 @@ export async function companiesView(industryId: string, days: number): Promise<C
   return [...byName.entries()]
     .map(([name, e]) => ({
       name,
+      domain: [...e.domains.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null,
       mentions: e.mentions,
       share: e.mentions / total,
       urls: [...e.urls],
@@ -215,13 +243,14 @@ export async function overview(
     .slice(0, 3)
     .map(([k, n]) => `${k.replace(/_/g, " ")} (${n})`)
     .join(", ");
-  const topComplaint = String(complaints[0]?.payload.theme ?? "");
+  const rawComplaint = String(complaints[0]?.payload.theme ?? "").trim();
+  const topComplaint = rawComplaint ? rawComplaint[0]!.toUpperCase() + rawComplaint.slice(1) : "";
 
   const narrative =
     `In the last ${days} days, ${pack.label} saw ${events.length} market events` +
     (topKinds ? ` — most commonly ${topKinds}` : "") +
-    `, across ${companySignals.length} company mentions` +
-    (topComplaint ? `. Top buyer complaint: "${topComplaint}".` : ".");
+    `, across ${companySignals.length} company mentions.` +
+    (topComplaint ? `\nTop buyer complaint: "${topComplaint}".` : "");
 
   return {
     industryId,

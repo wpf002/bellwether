@@ -174,7 +174,7 @@ export const catalogPacks: IndustryPack[] = [
   },
   {
     id: "healthtech",
-    label: "Health Tech",
+    label: "Health",
     description: "Digital health, clinical software, and health data platforms.",
     queries: ["digital health", "healthtech", "telemedicine"],
     tcTag: "health",
@@ -183,7 +183,7 @@ export const catalogPacks: IndustryPack[] = [
   },
   {
     id: "martech",
-    label: "Marketing Tech",
+    label: "Marketing",
     description: "CRM, automation, analytics, and the marketing software stack.",
     queries: ["marketing software", "CRM platform", "marketing automation"],
     tcTag: "marketing-tech",
@@ -192,7 +192,7 @@ export const catalogPacks: IndustryPack[] = [
   },
   {
     id: "hrtech",
-    label: "HR Tech",
+    label: "HR",
     description: "Hiring, payroll, people analytics, and workforce platforms.",
     queries: [
       "HR software",
@@ -206,7 +206,7 @@ export const catalogPacks: IndustryPack[] = [
   },
   {
     id: "proptech",
-    label: "Prop Tech",
+    label: "Real Estate & Property",
     description: "Real-estate software, property management, and construction tech.",
     queries: [
       "proptech",
@@ -220,7 +220,7 @@ export const catalogPacks: IndustryPack[] = [
   },
   {
     id: "edtech",
-    label: "Ed Tech",
+    label: "Education",
     description: "Learning platforms, courseware, and education software.",
     queries: ["edtech", "online learning platform", "education software"],
     tcTag: "edtech",
@@ -272,7 +272,7 @@ export const catalogPacks: IndustryPack[] = [
   },
   {
     id: "climate",
-    label: "Climate Tech",
+    label: "Climate",
     description: "Energy, carbon, and sustainability technology.",
     queries: ["climate tech", "clean energy", "carbon capture"],
     tcTag: "climate",
@@ -295,7 +295,7 @@ export const catalogPacks: IndustryPack[] = [
   },
   {
     id: "legaltech",
-    label: "Legal Tech",
+    label: "Legal",
     description: "Contract, compliance, and practice-management software.",
     queries: ["legal tech", "contract software", "compliance software", "legal AI", "e-discovery"],
     diveSite: "legaldive",

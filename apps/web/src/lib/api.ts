@@ -41,6 +41,7 @@ export interface EventItem {
 
 export interface CompanyItem {
   name: string;
+  domain: string | null;
   mentions: number;
   share: number;
   urls: string[];

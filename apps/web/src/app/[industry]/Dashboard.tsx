@@ -2,7 +2,15 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { CompanyItem, Digest, EventItem, KpiResult, Overview, TrendPoint } from "@/lib/api";
-import { humanize, kindStyle, logoFor, hostOf, initials } from "@/lib/format";
+import {
+  humanize,
+  kindStyle,
+  logoFor,
+  hostOf,
+  initials,
+  capitalize,
+  companyDomain,
+} from "@/lib/format";
 import { Donut, BarList, Sparkline, PALETTE, type Slice } from "@/components/Charts";
 
 type Tab = "overview" | "competitors" | "feed";
@@ -20,9 +28,17 @@ function kpiRecord(kpis: KpiResult[], match: (k: KpiResult) => boolean): Record<
     : {};
 }
 
-function CompanyLogo({ name, url, size = 28 }: { name: string; url?: string; size?: number }) {
+function CompanyLogo({
+  name,
+  domain,
+  size = 28,
+}: {
+  name: string;
+  domain?: string | null;
+  size?: number;
+}) {
   const [failed, setFailed] = useState(false);
-  const src = logoFor(url);
+  const src = logoFor(domain);
   const cls = `shrink-0 rounded-md bg-white object-contain ring-1 ring-slate-200`;
   if (src && !failed) {
     return (
@@ -135,6 +151,8 @@ export function Dashboard({
   const [tab, setTab] = useState<Tab>("overview");
   const [tracked, setTracked] = useState<string[]>([]);
   const [scoped, setScoped] = useState(false);
+  const [feedPage, setFeedPage] = useState(0);
+  const PER_PAGE = 20;
   const storeKey = `bellwether:competitors:${industryId}`;
 
   useEffect(() => {
@@ -260,7 +278,7 @@ export function Dashboard({
 
       {tab === "overview" && (
         <section className="mt-5 space-y-5">
-          <p className="card border-l-4 border-l-brand-500 p-4 text-[15px] leading-relaxed text-ink-700">
+          <p className="card whitespace-pre-line border-l-4 border-l-brand-500 p-4 text-[15px] leading-relaxed text-ink-700">
             {overview.narrative}
           </p>
 
@@ -279,7 +297,11 @@ export function Dashboard({
                           className="h-2.5 w-2.5 shrink-0 rounded-sm"
                           style={{ background: PALETTE[i] }}
                         />
-                        <CompanyLogo name={c.name} url={c.urls[0]} size={18} />
+                        <CompanyLogo
+                          name={c.name}
+                          domain={companyDomain(c.name, c.domain)}
+                          size={18}
+                        />
                         <span className="min-w-0 flex-1 truncate text-ink-700">{c.name}</span>
                         <span className="shrink-0 font-mono tabular-nums text-ink-400">
                           {Math.round(c.share * 100)}%
@@ -341,7 +363,9 @@ export function Dashboard({
                     className="flex items-start gap-3 rounded-lg border border-rose-100 bg-rose-50/40 p-3"
                   >
                     <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-rose-400" />
-                    <span className="min-w-0 flex-1 text-sm text-ink-700">{f.claim}</span>
+                    <span className="min-w-0 flex-1 text-sm text-ink-700">
+                      {capitalize(f.claim)}
+                    </span>
                     <Cite ids={f.sourceRecordIds} citations={digest.citations} />
                   </li>
                 ))}
@@ -380,7 +404,7 @@ export function Dashboard({
                     aria-label={`Track ${c.name}`}
                     className="h-4 w-4 accent-brand-600"
                   />
-                  <CompanyLogo name={c.name} url={c.urls[0]} />
+                  <CompanyLogo name={c.name} domain={companyDomain(c.name, c.domain)} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-3">
                       <span className="truncate font-medium text-ink">{c.name}</span>
@@ -412,18 +436,53 @@ export function Dashboard({
         </section>
       )}
 
-      {tab === "feed" && (
-        <section className="mt-5">
-          <ul className="space-y-1">
-            {shownEvents.length === 0 && (
-              <li className="card p-5 text-ink-500">No events in this window.</li>
-            )}
-            {shownEvents.map((e) => (
-              <EventRow key={e.signalId} e={e} feed />
-            ))}
-          </ul>
-        </section>
-      )}
+      {tab === "feed" &&
+        (() => {
+          const pageCount = Math.max(1, Math.ceil(shownEvents.length / PER_PAGE));
+          const page = Math.min(feedPage, pageCount - 1);
+          const start = page * PER_PAGE;
+          const pageEvents = shownEvents.slice(start, start + PER_PAGE);
+          return (
+            <section className="mt-5">
+              {shownEvents.length === 0 ? (
+                <div className="card p-5 text-ink-500">No events in this window.</div>
+              ) : (
+                <>
+                  <ul className="space-y-1">
+                    {pageEvents.map((e) => (
+                      <EventRow key={e.signalId} e={e} feed />
+                    ))}
+                  </ul>
+                  <div className="mt-5 flex items-center justify-between border-t border-slate-200 pt-4 text-sm">
+                    <span className="text-ink-400">
+                      {start + 1}–{Math.min(start + PER_PAGE, shownEvents.length)} of{" "}
+                      {shownEvents.length}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setFeedPage(page - 1)}
+                        disabled={page === 0}
+                        className="rounded-md border border-slate-200 px-3 py-1.5 text-ink-600 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        ← Prev
+                      </button>
+                      <span className="px-1 font-mono tabular-nums text-ink-500">
+                        {page + 1} / {pageCount}
+                      </span>
+                      <button
+                        onClick={() => setFeedPage(page + 1)}
+                        disabled={page >= pageCount - 1}
+                        className="rounded-md border border-slate-200 px-3 py-1.5 text-ink-600 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Next →
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </section>
+          );
+        })()}
 
       <p className="mt-6 text-center text-[11px] text-ink-300">
         {label} · every figure traces to a cited source record
@@ -452,9 +511,8 @@ function EventRow({ e, feed }: { e: EventItem; feed?: boolean }) {
   const host = hostOf(e.url);
   return (
     <li
-      className={`flex items-start gap-3 ${feed ? "rounded-lg px-3 py-3 hover:bg-white/70" : "py-2.5"}`}
+      className={`flex items-start gap-4 ${feed ? "rounded-lg px-3 py-3 hover:bg-white/70" : "py-2.5"}`}
     >
-      <span className={`chip mt-0.5 shrink-0 ${kindStyle(e.kind)}`}>{humanize(e.kind)}</span>
       <div className="min-w-0 flex-1">
         {e.url ? (
           <a
@@ -475,6 +533,7 @@ function EventRow({ e, feed }: { e: EventItem; feed?: boolean }) {
           </span>
         </div>
       </div>
+      <span className={`chip mt-0.5 shrink-0 ${kindStyle(e.kind)}`}>{humanize(e.kind)}</span>
     </li>
   );
 }
