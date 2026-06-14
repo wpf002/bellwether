@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { IndustryPack, Signal } from "@bellwether/core";
-import { buildWeeklyDigest } from "./weekly-digest.js";
+import { buildWeeklyDigest, assertCited } from "./weekly-digest.js";
 
 // Minimal stand-in: buildWeeklyDigest reads pack.id and pack.kpis. Keeps the
 // test from depending on the industries package.
@@ -93,5 +93,26 @@ describe("buildWeeklyDigest", () => {
     const complaints = digest.kpis.find((k) => k.id === "complaints");
     // count grouped by polarity: 1 negative, 1 positive
     expect(complaints?.value).toEqual({ negative: 1, positive: 1 });
+  });
+
+  it("every finding is cited (built digest passes the citation gate)", () => {
+    expect(() => assertCited(digest)).not.toThrow();
+  });
+});
+
+describe("assertCited", () => {
+  it("throws on an uncited finding", () => {
+    expect(() =>
+      assertCited({
+        industryId: "saas",
+        periodStart: "",
+        periodEnd: "",
+        kpis: [],
+        keyPlayers: [{ claim: "uncited", sourceRecordIds: [], signalId: "x" }],
+        whatChanged: [],
+        buyerComplaints: [],
+        generatedAt: "",
+      }),
+    ).toThrow(/Uncited finding/);
   });
 });

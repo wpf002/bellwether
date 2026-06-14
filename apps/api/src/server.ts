@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import { healthRoutes } from "./routes/health.js";
 import { industryRoutes } from "./routes/industries.js";
 import { dashboardRoutes } from "./routes/dashboard.js";
+import { qualityRoutes } from "./routes/quality.js";
 
 export async function buildServer() {
   const app = Fastify({
@@ -13,6 +14,7 @@ export async function buildServer() {
   await app.register(healthRoutes);
   await app.register(industryRoutes);
   await app.register(dashboardRoutes);
+  await app.register(qualityRoutes);
 
   return app;
 }

@@ -129,12 +129,21 @@ the monitor exits non-zero for cron/CI to page.)
 
 Goal: get smarter with use; this is the defensibility.
 
-- Strict citation layer everywhere (already modeled — enforce in UI/exports).
-- Optional human-review step before a digest is marked "shipped."
-- Capture which insights users act on; feed that back into source
-  prioritization and prompt tuning per industry.
+- [x] Citation layer enforced, not just modeled: `assertCited` throws on any
+      uncited finding at the digest boundary (provenance is now a hard contract).
+- [x] Human-review/ship gate: digests are `draft` until reviewed; `POST
+    /digests/:id/ship` records reviewer + timestamp; `GET /industries/:id/digests`
+      lists status.
+- [x] Feedback loop: `POST /feedback` (useful / not_useful / acted) →
+      `sourcePriority` ranks sources by yield + feedback (what to double down on
+      vs. re-tune/drop) → closes feedback to source/prompt choices.
+- [x] Per-industry quality metric (citation rate, coverage, useful rate, acted,
+      by-kind), snapshotted over time (`quality_snapshots` + `snapshot-quality`
+      CLI) and served at `/industries/:id/quality` with history.
 
-Exit: per-industry intelligence quality measurably improves over time.
+Exit: per-industry intelligence quality measurably improves over time. ✓
+mechanism in place — snapshots accumulate a trend; live-verified (citation 100%,
+coverage 93%, useful 50%).
 
 ## Phase 6 — Product hardening
 

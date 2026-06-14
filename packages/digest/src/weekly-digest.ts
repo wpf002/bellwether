@@ -59,7 +59,7 @@ export function buildWeeklyDigest(input: BuildDigestInput): WeeklyDigest {
     .filter((s) => s.entityKind === "sentiment_theme" && s.payload.polarity === "negative")
     .map((s) => toFinding(s, `Complaint theme: ${String(s.payload.theme ?? "unknown")}`));
 
-  return {
+  const digest: WeeklyDigest = {
     industryId: pack.id,
     periodStart,
     periodEnd,
@@ -69,4 +69,27 @@ export function buildWeeklyDigest(input: BuildDigestInput): WeeklyDigest {
     buyerComplaints,
     generatedAt: new Date().toISOString(),
   };
+  assertCited(digest);
+  return digest;
+}
+
+/**
+ * Enforces the citation layer (Phase 5): no finding ships without source
+ * records behind it. Throws on the first uncited finding — nothing in the
+ * platform asserts a fact it can't trace. This makes "provenance or it doesn't
+ * exist" an enforced contract at the digest boundary, not just a convention.
+ */
+export function assertCited(digest: WeeklyDigest): void {
+  const sections: [string, Finding[]][] = [
+    ["keyPlayers", digest.keyPlayers],
+    ["whatChanged", digest.whatChanged],
+    ["buyerComplaints", digest.buyerComplaints],
+  ];
+  for (const [name, findings] of sections) {
+    for (const f of findings) {
+      if (!f.sourceRecordIds || f.sourceRecordIds.length === 0) {
+        throw new Error(`Uncited finding in ${name}: "${f.claim}" (signal ${f.signalId})`);
+      }
+    }
+  }
 }
