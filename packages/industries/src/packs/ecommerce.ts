@@ -89,7 +89,7 @@ export const ecommercePack: IndustryPack = {
   kpis: [
     {
       id: "share_of_voice",
-      label: "Share of Voice (by Company)",
+      label: "Competitive Mindshare",
       aggregation: "share_of_voice",
       entityKind: "company",
       field: "name",
@@ -114,7 +114,7 @@ export const ecommercePack: IndustryPack = {
       id: "ecom-company",
       entityKind: "company",
       system:
-        "Extract a RETAIL/E-COMMERCE COMPANY profile from the text — a brand, retailer, marketplace, or commerce-platform vendor. A company is NOT a product, campaign, event, or funding round. If the text names no specific company (e.g. a trend piece or event recap), set name to null and leave other fields empty. Use the company's own name, not a product's. JSON keys: name (string|null), domain, positioning, pricingTiers[], features[].",
+        'Extract EVERY retail/e-commerce company named in the text as an array — brands, retailers, marketplaces, or commerce-platform vendors. A company is NOT a product, campaign, event, or funding round. Return { "companies": [ { "name", "domain", "positioning", "pricingTiers": [], "features": [] } ] } — one entry per distinct company. Use the company\'s own name, not a product\'s. Empty array if none.',
     },
     {
       id: "ecom-sentiment",

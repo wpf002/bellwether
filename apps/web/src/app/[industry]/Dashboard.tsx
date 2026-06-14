@@ -1,47 +1,45 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import type {
-  CompanyItem,
-  Digest,
-  EventItem,
-  Finding,
-  KpiResult,
-  KpiValue,
-  Overview,
-} from "@/lib/api";
-import { humanize, kindStyle, logoFor, initials } from "@/lib/format";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import type { CompanyItem, Digest, EventItem, KpiResult, Overview } from "@/lib/api";
+import { humanize, kindStyle, logoFor, hostOf, initials } from "@/lib/format";
+import { Donut, BarList, PALETTE, type Slice } from "@/components/Charts";
 
 type Tab = "overview" | "competitors" | "feed";
 
-function formatKpi(value: KpiValue): string {
-  if (value == null) return "—";
-  if (typeof value === "number") return Number.isInteger(value) ? String(value) : value.toFixed(2);
-  if (typeof value === "string") return value;
-  const entries = Object.entries(value).sort((a, b) => b[1] - a[1]);
-  if (entries.length === 0) return "—";
-  return entries
-    .map(([k, n]) => `${humanize(k)} ${n < 1 ? `${Math.round(n * 100)}%` : n}`)
-    .join("  ·  ");
+const SENTIMENT_COLOR: Record<string, string> = {
+  positive: "#10b981",
+  neutral: "#94a3b8",
+  negative: "#ef4444",
+};
+
+function kpiRecord(kpis: KpiResult[], match: (k: KpiResult) => boolean): Record<string, number> {
+  const k = kpis.find(match);
+  return k && typeof k.value === "object" && k.value !== null
+    ? (k.value as Record<string, number>)
+    : {};
 }
 
-function CompanyLogo({ name, url }: { name: string; url?: string }) {
+function CompanyLogo({ name, url, size = 28 }: { name: string; url?: string; size?: number }) {
   const [failed, setFailed] = useState(false);
   const src = logoFor(url);
+  const cls = `shrink-0 rounded-md bg-white object-contain ring-1 ring-slate-200`;
   if (src && !failed) {
     return (
       <img
         src={src}
         alt=""
-        width={28}
-        height={28}
-        className="h-7 w-7 shrink-0 rounded-md bg-white object-contain ring-1 ring-slate-200"
+        style={{ width: size, height: size }}
+        className={cls}
         onError={() => setFailed(true)}
       />
     );
   }
   return (
-    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-brand-50 text-[11px] font-semibold text-brand-700 ring-1 ring-brand-100">
+    <span
+      style={{ width: size, height: size }}
+      className="flex shrink-0 items-center justify-center rounded-md bg-brand-50 text-[11px] font-semibold text-brand-700 ring-1 ring-brand-100"
+    >
       {initials(name)}
     </span>
   );
@@ -49,15 +47,23 @@ function CompanyLogo({ name, url }: { name: string; url?: string }) {
 
 function Cite({ ids, citations }: { ids: string[]; citations: Record<string, string | null> }) {
   const urls = ids.map((id) => citations[id]).filter((u): u is string => Boolean(u));
-  if (urls.length === 0) return <span className="text-xs text-ink-400"> (no source)</span>;
+  if (urls.length === 0) return null;
   return (
-    <span className="ml-1 space-x-1 text-xs">
-      {urls.slice(0, 3).map((u, i) => (
-        <a key={u} href={u} target="_blank" rel="noreferrer" className="link-cite">
-          [{i + 1}]
-        </a>
-      ))}
-    </span>
+    <a href={urls[0]} target="_blank" rel="noreferrer" className="link-cite shrink-0 text-xs">
+      source ↗
+    </a>
+  );
+}
+
+function Panel({ title, count, children }: { title: string; count?: number; children: ReactNode }) {
+  return (
+    <div className="card p-5">
+      <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-ink">
+        {title}
+        {count != null && <span className="chip bg-slate-100 text-ink-400">{count}</span>}
+      </h3>
+      {children}
+    </div>
   );
 }
 
@@ -114,8 +120,30 @@ export function Dashboard({
   const inScope = (text: string) =>
     tracked.some((n) => text.toLowerCase().includes(n.toLowerCase()));
   const shownEvents = active ? events.filter((e) => inScope(e.headline)) : events;
-  const shownCompanies = sortedCompanies.filter((c) => inScope(c.name));
-  const scopeFindings = (fs: Finding[]) => (active ? fs.filter((f) => inScope(f.claim)) : fs);
+  const shownCompanies = active ? sortedCompanies.filter((c) => inScope(c.name)) : sortedCompanies;
+
+  // ---- chart data ----
+  const mindshare: Slice[] = useMemo(() => {
+    const top = shownCompanies.slice(0, 6);
+    const rest = shownCompanies.slice(6);
+    const slices = top.map((c, i) => ({ label: c.name, value: c.mentions, color: PALETTE[i]! }));
+    const restTotal = rest.reduce((s, c) => s + c.mentions, 0);
+    if (restTotal > 0) slices.push({ label: "Other", value: restTotal, color: PALETTE[8]! });
+    return slices;
+  }, [shownCompanies]);
+
+  const sentiment: Slice[] = Object.entries(
+    kpiRecord(overview.kpis, (k) => k.entityKind === "sentiment_theme"),
+  )
+    .map(([k, v]) => ({ label: humanize(k), value: v, color: SENTIMENT_COLOR[k] ?? "#94a3b8" }))
+    .sort((a, b) => b.value - a.value);
+
+  const eventMix: Slice[] = Object.entries(
+    kpiRecord(overview.kpis, (k) => k.entityKind === "market_event" && k.field === "kind"),
+  )
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 7)
+    .map(([k, v], i) => ({ label: humanize(k), value: v, color: PALETTE[i]! }));
 
   const tabs: [Tab, string][] = [
     ["overview", "Market Overview"],
@@ -125,7 +153,6 @@ export function Dashboard({
 
   return (
     <div className="mt-6">
-      {/* Stat strip */}
       <div className="mb-6 grid grid-cols-3 gap-3 sm:max-w-xl">
         <Stat label="Market Events" value={overview.totals.events} />
         <Stat label="Company Mentions" value={overview.totals.companies} />
@@ -145,7 +172,7 @@ export function Dashboard({
         {tracked.length > 0 && (
           <label
             className="ml-auto flex cursor-pointer items-center gap-2 self-center text-xs text-ink-500"
-            title="Show only the companies you've checked in Competitor Tracker. Filters players and events to your watchlist; market-wide sentiment is always shown."
+            title="Show only the companies you've added to your watchlist in Competitor Tracker. Filters players and events to your watchlist; market-wide sentiment is always shown."
           >
             <input
               type="checkbox"
@@ -164,29 +191,80 @@ export function Dashboard({
             {overview.narrative}
           </p>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {overview.kpis.map((k: KpiResult) => (
-              <div key={k.id} className="card p-4">
-                <div className="text-xs font-medium uppercase tracking-wide text-ink-400">
-                  {k.label}
+          {/* Visualization row */}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+            <Panel title="Competitive Mindshare">
+              {mindshare.length === 0 ? (
+                <p className="text-sm text-ink-400">No company mentions yet.</p>
+              ) : (
+                <div className="flex items-center gap-5">
+                  <Donut data={mindshare} />
+                  <ul className="min-w-0 flex-1 space-y-1.5">
+                    {shownCompanies.slice(0, 6).map((c, i) => (
+                      <li key={c.name} className="flex items-center gap-2 text-sm">
+                        <span
+                          className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                          style={{ background: PALETTE[i] }}
+                        />
+                        <CompanyLogo name={c.name} url={c.urls[0]} size={18} />
+                        <span className="min-w-0 flex-1 truncate text-ink-700">{c.name}</span>
+                        <span className="shrink-0 tabular-nums text-ink-400">
+                          {Math.round(c.share * 100)}%
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <div className="mt-1.5 text-sm font-medium text-ink">{formatKpi(k.value)}</div>
-              </div>
-            ))}
+              )}
+            </Panel>
+
+            <Panel title="Buyer Sentiment">
+              {sentiment.length === 0 ? (
+                <p className="text-sm text-ink-400">No sentiment yet.</p>
+              ) : (
+                <BarList data={sentiment} />
+              )}
+            </Panel>
+
+            <Panel title="Event Mix">
+              {eventMix.length === 0 ? (
+                <p className="text-sm text-ink-400">No events yet.</p>
+              ) : (
+                <BarList data={eventMix} />
+              )}
+            </Panel>
           </div>
 
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-            <DigestList
-              title="What Changed"
-              findings={digest ? scopeFindings(digest.whatChanged) : []}
-              citations={digest?.citations ?? {}}
-            />
-            <PlayersPanel companies={active ? shownCompanies : sortedCompanies} />
-            <DigestList
-              title="Buyer Complaints"
-              findings={digest ? digest.buyerComplaints : []}
-              citations={digest?.citations ?? {}}
-            />
+          {/* Content row */}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <Panel title="What Changed" count={shownEvents.length}>
+              <ul className="divide-y divide-slate-100">
+                {shownEvents.length === 0 && (
+                  <li className="py-2 text-sm text-ink-400">— none —</li>
+                )}
+                {shownEvents.slice(0, 12).map((e) => (
+                  <EventRow key={e.signalId} e={e} />
+                ))}
+              </ul>
+            </Panel>
+
+            <Panel title="Buyer Complaints" count={digest?.buyerComplaints.length ?? 0}>
+              <ul className="space-y-2.5">
+                {(!digest || digest.buyerComplaints.length === 0) && (
+                  <li className="text-sm text-ink-400">— none —</li>
+                )}
+                {digest?.buyerComplaints.slice(0, 12).map((f) => (
+                  <li
+                    key={f.signalId}
+                    className="flex items-start gap-3 rounded-lg border border-rose-100 bg-rose-50/40 p-3"
+                  >
+                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-rose-400" />
+                    <span className="min-w-0 flex-1 text-sm text-ink-700">{f.claim}</span>
+                    <Cite ids={f.sourceRecordIds} citations={digest.citations} />
+                  </li>
+                ))}
+              </ul>
+            </Panel>
           </div>
         </section>
       )}
@@ -195,7 +273,7 @@ export function Dashboard({
         <section className="mt-6">
           <p className="mb-4 text-sm text-ink-500">
             Check companies to add them to your watchlist (saved in this browser). The{" "}
-            <span className="font-medium text-ink-700">Only my watchlist</span> toggle then scopes
+            <span className="font-medium text-ink-700">Only My Watchlist</span> toggle then scopes
             every view to them.
           </p>
           <ul className="space-y-2.5">
@@ -225,7 +303,7 @@ export function Dashboard({
                     <div className="flex items-center justify-between gap-3">
                       <span className="truncate font-medium text-ink">{c.name}</span>
                       <span className="shrink-0 text-xs text-ink-400">
-                        {c.mentions} mentions · {Math.round(c.share * 100)}% SoV
+                        {c.mentions} mentions · {Math.round(c.share * 100)}%
                       </span>
                     </div>
                     <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
@@ -258,32 +336,8 @@ export function Dashboard({
             {shownEvents.length === 0 && (
               <li className="card p-5 text-ink-500">No events in this window.</li>
             )}
-            {shownEvents.map((e: EventItem) => (
-              <li
-                key={e.signalId}
-                className="flex items-start gap-3 rounded-lg px-3 py-3 transition hover:bg-white/70"
-              >
-                <span className={`chip mt-0.5 shrink-0 ${kindStyle(e.kind)}`}>
-                  {humanize(e.kind)}
-                </span>
-                <div className="min-w-0">
-                  {e.url ? (
-                    <a
-                      href={e.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-ink hover:text-brand-700 hover:underline"
-                    >
-                      {e.headline}
-                    </a>
-                  ) : (
-                    <span className="text-ink">{e.headline}</span>
-                  )}
-                  <div className="text-xs text-ink-400">
-                    {new Date(e.detectedAt).toLocaleDateString()}
-                  </div>
-                </div>
-              </li>
+            {shownEvents.map((e) => (
+              <EventRow key={e.signalId} e={e} feed />
             ))}
           </ul>
         </section>
@@ -292,29 +346,41 @@ export function Dashboard({
   );
 }
 
-function PlayersPanel({ companies }: { companies: CompanyItem[] }) {
+function EventRow({ e, feed }: { e: EventItem; feed?: boolean }) {
+  const host = hostOf(e.url);
   return (
-    <div className="card p-5">
-      <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
-        Key Players
-        <span className="chip bg-slate-100 text-ink-400">{companies.length}</span>
-      </h3>
-      {companies.length === 0 ? (
-        <p className="mt-3 text-sm text-ink-400">— none —</p>
-      ) : (
-        <ul className="mt-3 space-y-2.5">
-          {companies.slice(0, 12).map((c) => (
-            <li key={c.name} className="flex items-center gap-3">
-              <CompanyLogo name={c.name} url={c.urls[0]} />
-              <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{c.name}</span>
-              <span className="shrink-0 text-xs text-ink-400">
-                {c.mentions} · {Math.round(c.share * 100)}%
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <li
+      className={`flex items-start gap-3 ${feed ? "rounded-lg px-3 py-3 hover:bg-white/70" : "py-2.5"}`}
+    >
+      <span className={`chip mt-0.5 shrink-0 ${kindStyle(e.kind)}`}>{humanize(e.kind)}</span>
+      <div className="min-w-0 flex-1">
+        {e.url ? (
+          <a
+            href={e.url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-ink hover:text-brand-700 hover:underline"
+          >
+            {e.headline}
+          </a>
+        ) : (
+          <span className="text-ink">{e.headline}</span>
+        )}
+        <div className="mt-1 flex items-center gap-2 text-xs text-ink-400">
+          {host && <CompanyLogoless host={host} />}
+          <span>{new Date(e.detectedAt).toLocaleDateString()}</span>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function CompanyLogoless({ host }: { host: string }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <img src={logoFor(host) ?? ""} alt="" width={12} height={12} className="h-3 w-3 rounded-sm" />
+      {host}
+    </span>
   );
 }
 
@@ -325,37 +391,6 @@ function Stat({ label, value, accent }: { label: string; value: number; accent?:
         {value}
       </div>
       <div className="mt-0.5 text-xs font-medium text-ink-400">{label}</div>
-    </div>
-  );
-}
-
-function DigestList({
-  title,
-  findings,
-  citations,
-}: {
-  title: string;
-  findings: Finding[];
-  citations: Record<string, string | null>;
-}) {
-  return (
-    <div className="card p-5">
-      <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
-        {title}
-        <span className="chip bg-slate-100 text-ink-400">{findings.length}</span>
-      </h3>
-      {findings.length === 0 ? (
-        <p className="mt-3 text-sm text-ink-400">— none —</p>
-      ) : (
-        <ul className="mt-3 space-y-2">
-          {findings.slice(0, 25).map((f) => (
-            <li key={f.signalId} className="text-sm leading-snug text-ink-700">
-              {f.claim}
-              <Cite ids={f.sourceRecordIds} citations={citations} />
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 }

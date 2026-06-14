@@ -215,7 +215,7 @@ export const saasPack: IndustryPack = {
   kpis: [
     {
       id: "share_of_voice",
-      label: "Share of Voice (by Company)",
+      label: "Competitive Mindshare",
       aggregation: "share_of_voice",
       entityKind: "company",
       field: "name",
@@ -240,7 +240,7 @@ export const saasPack: IndustryPack = {
       id: "saas-company",
       entityKind: "company",
       system:
-        "Extract a SOFTWARE COMPANY/VENDOR profile from the text. A company is an organization that sells software — NOT a product, feature, event, conference, or funding round. If the text names no specific software company (e.g. it's about a product launch, an event recap, or a general topic), set name to null and leave the other fields empty. Use the company's own name, not a product's. JSON keys: name (string|null), domain, positioning, pricingTiers[], features[].",
+        'Extract EVERY software company/vendor named in the text as an array. A company is an organization that sells software — NOT a product, feature, event, conference, or funding round. Return { "companies": [ { "name", "domain", "positioning", "pricingTiers": [], "features": [] } ] } — one entry per distinct company. Include pricing tiers/features when the text states them (e.g. a pricing page). Use the company\'s own name, not a product\'s. Empty array if none.',
     },
     {
       id: "saas-sentiment",

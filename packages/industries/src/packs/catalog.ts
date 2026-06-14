@@ -12,7 +12,7 @@ import type { IndustryPack, KpiDef, ExtractionPrompt, SourceDef } from "@bellwet
 const STANDARD_KPIS: KpiDef[] = [
   {
     id: "share_of_voice",
-    label: "Share of Voice (by Company)",
+    label: "Competitive Mindshare",
     aggregation: "share_of_voice",
     entityKind: "company",
     field: "name",
@@ -38,7 +38,7 @@ function prompts(label: string): ExtractionPrompt[] {
     {
       id: "company",
       entityKind: "company",
-      system: `Extract a ${label} company/vendor profile from the text — an organization that sells a product or service in this space, NOT a product, feature, event, or funding round. If the text names no specific company, set name to null and leave other fields empty. Use the company's own name. JSON keys: name (string|null), domain, positioning, pricingTiers[], features[].`,
+      system: `Extract EVERY ${label} company/vendor named in the text as an array — each an organization that sells a product or service in this space (NOT a product, feature, event, or funding round). Return { "companies": [ { "name", "domain", "positioning", "pricingTiers": [], "features": [] } ] } with one entry per distinct company; include only fields the text states. Empty array if none.`,
     },
     {
       id: "sentiment",

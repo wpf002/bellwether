@@ -39,6 +39,36 @@ export const CompanyExtraction = z.object({
 });
 export type CompanyExtraction = z.infer<typeof CompanyExtraction>;
 
+/**
+ * Multi-company extraction — pulls EVERY company named in a record (a news
+ * article often names several), so coverage isn't capped at one company per
+ * source record. A pricing page yields one rich entry (with tiers); a news item
+ * yields many lighter ones. Each becomes its own company signal downstream.
+ */
+export const CompanyListExtraction = z.object({
+  companies: z
+    .array(
+      z.object({
+        name: z.string(),
+        domain: z.string().nullable(),
+        positioning: z.string().nullable(),
+        pricingTiers: z
+          .array(
+            z.object({
+              name: z.string(),
+              monthlyUsd: z.number().nullable(),
+              annualUsd: z.number().nullable(),
+              unit: z.string().nullable(),
+            }),
+          )
+          .default([]),
+        features: z.array(z.string()).default([]),
+      }),
+    )
+    .default([]),
+});
+export type CompanyListExtraction = z.infer<typeof CompanyListExtraction>;
+
 export const SentimentExtraction = z.object({
   theme: z.string(),
   polarity: z.enum(["positive", "neutral", "negative"]),

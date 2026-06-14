@@ -2,7 +2,12 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@bellwether/db";
 import { getIndustryPack } from "@bellwether/industries";
-import { extractStructured, extractionSchemas, isExtractionEmpty } from "@bellwether/extract";
+import {
+  extractStructured,
+  extractionSchemas,
+  isExtractionEmpty,
+  CompanyListExtraction,
+} from "@bellwether/extract";
 import type { ExtractJob } from "../queues.js";
 import { toPlainText } from "./text.js";
 import { buildExtractedSignal } from "./signal.js";
@@ -10,12 +15,11 @@ import { buildExtractedSignal } from "./signal.js";
 /**
  * For a raw record, run the pack's extraction prompt for each entity kind the
  * source is scoped to (`SourceDef.extractAs`, defaulting to the pack's full
- * set). Each successful extraction becomes a Signal with full lineage. The LLM
- * only ever extracts here — no scoring, ranking, or prediction.
+ * set). The LLM only ever extracts here — no scoring, ranking, or prediction.
  *
- * An extraction that fails (no parseable output / a kind the record doesn't
- * support) is logged and skipped, not fatal: one record can legitimately yield
- * a market_event but no company.
+ * `company` extraction pulls EVERY company named in the record (one signal each)
+ * so coverage isn't capped at one company per article; other kinds yield a
+ * single signal. A failed/empty extraction is logged and skipped, not fatal.
  */
 export async function processExtract(job: ExtractJob): Promise<void> {
   const pack = getIndustryPack(job.industryId);
@@ -33,47 +37,57 @@ export async function processExtract(job: ExtractJob): Promise<void> {
   const kinds = source.extractAs ?? pack.entityKinds;
   const text = toPlainText(record.raw);
 
-  for (const kind of kinds) {
-    const prompt = pack.prompts.find((p) => p.entityKind === kind);
-    const schemaForKind = extractionSchemas[kind];
-    if (!prompt || !schemaForKind) continue;
-
-    let payload: Record<string, unknown>;
-    try {
-      payload = (await extractStructured({ prompt, text, schema: schemaForKind })) as Record<
-        string,
-        unknown
-      >;
-    } catch (err) {
-      console.warn(
-        `[extract] ${record.id} (${kind}): ${err instanceof Error ? err.message : String(err)}`,
-      );
-      continue;
-    }
-
-    // The model declined — no entity of this kind in the record. Don't persist junk.
-    if (isExtractionEmpty(kind, payload)) continue;
-
-    const signal = await buildExtractedSignal({
+  const persist = (entityKind: (typeof kinds)[number], payload: Record<string, unknown>) =>
+    buildExtractedSignal({
       id: randomUUID(),
       industryId: pack.id,
-      entityKind: kind,
+      entityKind,
       payload,
       rawRecordId: record.id,
       sourceId: source.id,
       createdAt: new Date().toISOString(),
-    });
+    }).then((signal) =>
+      db
+        .insert(schema.signals)
+        .values({
+          id: signal.id,
+          industryId: signal.industryId,
+          entityKind: signal.entityKind,
+          payload: signal.payload,
+          sourceRecordIds: signal.sourceRecordIds,
+          lineage: signal.lineage,
+        })
+        .onConflictDoNothing(),
+    );
 
-    await db
-      .insert(schema.signals)
-      .values({
-        id: signal.id,
-        industryId: signal.industryId,
-        entityKind: signal.entityKind,
-        payload: signal.payload,
-        sourceRecordIds: signal.sourceRecordIds,
-        lineage: signal.lineage,
-      })
-      .onConflictDoNothing();
+  for (const kind of kinds) {
+    const prompt = pack.prompts.find((p) => p.entityKind === kind);
+    if (!prompt) continue;
+
+    try {
+      if (kind === "company") {
+        // Multi-company: every org named in the record becomes its own signal.
+        const result = await extractStructured({ prompt, text, schema: CompanyListExtraction });
+        for (const company of result.companies ?? []) {
+          const payload = company as Record<string, unknown>;
+          if (isExtractionEmpty("company", payload)) continue;
+          await persist("company", payload);
+        }
+      } else {
+        const schemaForKind = extractionSchemas[kind];
+        if (!schemaForKind) continue;
+        const payload = (await extractStructured({
+          prompt,
+          text,
+          schema: schemaForKind,
+        })) as Record<string, unknown>;
+        if (isExtractionEmpty(kind, payload)) continue;
+        await persist(kind, payload);
+      }
+    } catch (err) {
+      console.warn(
+        `[extract] ${record.id} (${kind}): ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
 }

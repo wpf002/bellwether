@@ -5,6 +5,7 @@ export {
   extractionSchemas,
   isExtractionEmpty,
   CompanyExtraction,
+  CompanyListExtraction,
   SentimentExtraction,
   MarketEventExtraction,
 } from "./schemas.js";
