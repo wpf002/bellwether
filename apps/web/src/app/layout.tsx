@@ -17,23 +17,19 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <Link href="/" className="transition-opacity hover:opacity-90">
               <Logo />
             </Link>
-            <nav className="hidden items-center gap-6 text-sm text-white/80 sm:flex">
-              <Link href="/" className="hover:text-white">
+            <nav className="flex items-center gap-5 text-sm text-white/80">
+              <Link href="/" className="hidden hover:text-white sm:inline">
                 Industries
               </Link>
-              <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/90 ring-1 ring-white/20">
-                Provenance-first intelligence
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white ring-1 ring-white/20">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+                Live
               </span>
             </nav>
           </div>
         </header>
 
         <div className="shell py-8">{children}</div>
-
-        <footer className="shell border-t border-slate-200/70 py-8 text-xs text-ink-400">
-          Bellwether — every signal traces to a source record. Choose an industry; see where the
-          market is heading.
-        </footer>
       </body>
     </html>
   );

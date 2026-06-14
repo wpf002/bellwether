@@ -215,21 +215,21 @@ export const saasPack: IndustryPack = {
   kpis: [
     {
       id: "share_of_voice",
-      label: "Share of voice (by company)",
+      label: "Share of Voice (by Company)",
       aggregation: "share_of_voice",
       entityKind: "company",
       field: "name",
     },
     {
       id: "negative_themes",
-      label: "Top buyer complaints",
+      label: "Top Buyer Complaints",
       aggregation: "count",
       entityKind: "sentiment_theme",
       field: "polarity",
     },
     {
       id: "pricing_changes",
-      label: "Pricing changes (30d)",
+      label: "Pricing Changes (30d)",
       aggregation: "count",
       entityKind: "market_event",
       field: "kind",

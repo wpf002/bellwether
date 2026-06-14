@@ -89,21 +89,21 @@ export const ecommercePack: IndustryPack = {
   kpis: [
     {
       id: "share_of_voice",
-      label: "Share of voice (by company)",
+      label: "Share of Voice (by Company)",
       aggregation: "share_of_voice",
       entityKind: "company",
       field: "name",
     },
     {
       id: "negative_themes",
-      label: "Top shopper/merchant complaints",
+      label: "Top Shopper/Merchant Complaints",
       aggregation: "count",
       entityKind: "sentiment_theme",
       field: "polarity",
     },
     {
       id: "channel_moves",
-      label: "Channel & pricing moves (30d)",
+      label: "Channel & Pricing Moves (30d)",
       aggregation: "count",
       entityKind: "market_event",
       field: "kind",

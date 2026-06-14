@@ -114,6 +114,7 @@ export function Dashboard({
   const inScope = (text: string) =>
     tracked.some((n) => text.toLowerCase().includes(n.toLowerCase()));
   const shownEvents = active ? events.filter((e) => inScope(e.headline)) : events;
+  const shownCompanies = sortedCompanies.filter((c) => inScope(c.name));
   const scopeFindings = (fs: Finding[]) => (active ? fs.filter((f) => inScope(f.claim)) : fs);
 
   const tabs: [Tab, string][] = [
@@ -126,9 +127,9 @@ export function Dashboard({
     <div className="mt-6">
       {/* Stat strip */}
       <div className="mb-6 grid grid-cols-3 gap-3 sm:max-w-xl">
-        <Stat label="Market events" value={overview.totals.events} />
-        <Stat label="Company mentions" value={overview.totals.companies} />
-        <Stat label="Buyer complaints" value={overview.totals.complaints} accent />
+        <Stat label="Market Events" value={overview.totals.events} />
+        <Stat label="Company Mentions" value={overview.totals.companies} />
+        <Stat label="Buyer Complaints" value={overview.totals.complaints} accent />
       </div>
 
       <nav className="flex items-center gap-6 border-b border-slate-200">
@@ -152,7 +153,7 @@ export function Dashboard({
               onChange={(e) => setScoped(e.target.checked)}
               className="accent-brand-600"
             />
-            Only my watchlist ({tracked.length})
+            Only My Watchlist ({tracked.length})
           </label>
         )}
       </nav>
@@ -174,25 +175,19 @@ export function Dashboard({
             ))}
           </div>
 
-          {digest && (
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-              <DigestList
-                title="What changed"
-                findings={scopeFindings(digest.whatChanged)}
-                citations={digest.citations}
-              />
-              <DigestList
-                title="Key players"
-                findings={scopeFindings(digest.keyPlayers)}
-                citations={digest.citations}
-              />
-              <DigestList
-                title="Buyer complaints"
-                findings={digest.buyerComplaints}
-                citations={digest.citations}
-              />
-            </div>
-          )}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+            <DigestList
+              title="What Changed"
+              findings={digest ? scopeFindings(digest.whatChanged) : []}
+              citations={digest?.citations ?? {}}
+            />
+            <PlayersPanel companies={active ? shownCompanies : sortedCompanies} />
+            <DigestList
+              title="Buyer Complaints"
+              findings={digest ? digest.buyerComplaints : []}
+              citations={digest?.citations ?? {}}
+            />
+          </div>
         </section>
       )}
 
@@ -292,6 +287,32 @@ export function Dashboard({
             ))}
           </ul>
         </section>
+      )}
+    </div>
+  );
+}
+
+function PlayersPanel({ companies }: { companies: CompanyItem[] }) {
+  return (
+    <div className="card p-5">
+      <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
+        Key Players
+        <span className="chip bg-slate-100 text-ink-400">{companies.length}</span>
+      </h3>
+      {companies.length === 0 ? (
+        <p className="mt-3 text-sm text-ink-400">— none —</p>
+      ) : (
+        <ul className="mt-3 space-y-2.5">
+          {companies.slice(0, 12).map((c) => (
+            <li key={c.name} className="flex items-center gap-3">
+              <CompanyLogo name={c.name} url={c.urls[0]} />
+              <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{c.name}</span>
+              <span className="shrink-0 text-xs text-ink-400">
+                {c.mentions} · {Math.round(c.share * 100)}%
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

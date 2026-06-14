@@ -49,7 +49,7 @@ export function buildWeeklyDigest(input: BuildDigestInput): WeeklyDigest {
 
   const keyPlayers = signals
     .filter((s) => s.entityKind === "company")
-    .map((s) => toFinding(s, `Active player: ${String(s.payload.name ?? "unknown")}`));
+    .map((s) => toFinding(s, String(s.payload.name ?? "unknown")));
 
   const whatChanged = signals
     .filter((s) => s.entityKind === "market_event")
@@ -57,7 +57,7 @@ export function buildWeeklyDigest(input: BuildDigestInput): WeeklyDigest {
 
   const buyerComplaints = signals
     .filter((s) => s.entityKind === "sentiment_theme" && s.payload.polarity === "negative")
-    .map((s) => toFinding(s, `Complaint theme: ${String(s.payload.theme ?? "unknown")}`));
+    .map((s) => toFinding(s, String(s.payload.theme ?? "unknown")));
 
   const digest: WeeklyDigest = {
     industryId: pack.id,

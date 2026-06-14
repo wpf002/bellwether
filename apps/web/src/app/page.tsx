@@ -19,10 +19,6 @@ export default async function Home() {
   return (
     <main>
       <section className="mb-10 max-w-3xl">
-        <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700 ring-1 ring-brand-100">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent-500" />
-          Live, cited market intelligence
-        </p>
         <h1 className="text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
           Choose an industry.
           <br />

@@ -1,33 +1,32 @@
-import type { IndustryPack, KpiDef, ExtractionPrompt } from "@bellwether/core";
+import type { IndustryPack, KpiDef, ExtractionPrompt, SourceDef } from "@bellwether/core";
 
 /**
  * Starter industry catalog. saas + ecommerce are the hand-curated flagship packs
  * (rich first-party + pricing-page sources). The verticals here are generated
- * from a template so the platform ships breadth: each pulls LIVE data from
- * Hacker News topic feeds (hnrss.org is robots-permitted and supports arbitrary
- * `?q=` queries), giving every industry real, cited signals the moment it's
- * scraped. Deepening any vertical = add curated sources to its pack, exactly as
- * saas did — config, not code.
+ * from a template, but each gets DEPTH: several Hacker News query angles plus a
+ * TechCrunch topic feed (all robots-permitted), so every vertical pulls real,
+ * cited signals from multiple sources the moment it's scraped. Deepening a
+ * vertical further = add curated first-party/pricing sources, like saas — config.
  */
 
 const STANDARD_KPIS: KpiDef[] = [
   {
     id: "share_of_voice",
-    label: "Share of voice (by company)",
+    label: "Share of Voice (by Company)",
     aggregation: "share_of_voice",
     entityKind: "company",
     field: "name",
   },
   {
     id: "negative_themes",
-    label: "Top complaints",
+    label: "Sentiment Mix",
     aggregation: "count",
     entityKind: "sentiment_theme",
     field: "polarity",
   },
   {
     id: "event_mix",
-    label: "Event mix (30d)",
+    label: "Event Mix (30d)",
     aggregation: "count",
     entityKind: "market_event",
     field: "kind",
@@ -58,35 +57,51 @@ function makePack(o: {
   id: string;
   label: string;
   description: string;
-  query: string;
+  /** HN search angles — each becomes a signal source (events + companies). */
+  queries: string[];
+  /** TechCrunch tag (techcrunch.com/tag/<tag>/feed/) if one exists for the topic. */
+  tcTag?: string;
 }): IndustryPack {
-  const q = encodeURIComponent(o.query);
+  const sources: SourceDef[] = o.queries.map((q, i) => ({
+    id: `${o.id}-hn${i + 1}`,
+    label: `Hacker News — "${q}"`,
+    kind: "rss",
+    adapter: "rss-news",
+    url: `https://hnrss.org/newest?q=${encodeURIComponent(q)}&points=10`,
+    mayContainPersonalData: false,
+    extractAs: ["market_event", "company"],
+  }));
+
+  if (o.tcTag) {
+    sources.push({
+      id: `${o.id}-techcrunch`,
+      label: `TechCrunch — ${o.label}`,
+      kind: "rss",
+      adapter: "rss-news",
+      url: `https://techcrunch.com/tag/${o.tcTag}/feed/`,
+      mayContainPersonalData: false,
+      extractAs: ["market_event", "company"],
+    });
+  }
+
+  // Lower-bar HN feed for community sentiment.
+  sources.push({
+    id: `${o.id}-discussion`,
+    label: `Hacker News — ${o.label} discussion`,
+    kind: "social_public",
+    adapter: "rss-news",
+    url: `https://hnrss.org/newest?q=${encodeURIComponent(o.queries[0] ?? o.label)}&points=2`,
+    mayContainPersonalData: true,
+    extractAs: ["sentiment_theme"],
+  });
+
   return {
     id: o.id,
     label: o.label,
-    version: "0.1.0",
+    version: "0.2.0",
     description: o.description,
     entityKinds: ["company", "sentiment_theme", "market_event"],
-    sources: [
-      {
-        id: `${o.id}-news`,
-        label: `${o.label} — Hacker News (signals)`,
-        kind: "rss",
-        adapter: "rss-news",
-        url: `https://hnrss.org/newest?q=${q}&points=20`,
-        mayContainPersonalData: false,
-        extractAs: ["market_event", "company"],
-      },
-      {
-        id: `${o.id}-discussion`,
-        label: `${o.label} — Hacker News (discussion)`,
-        kind: "social_public",
-        adapter: "rss-news",
-        url: `https://hnrss.org/newest?q=${q}&points=2`,
-        mayContainPersonalData: true,
-        extractAs: ["sentiment_theme"],
-      },
-    ],
+    sources,
     kpis: STANDARD_KPIS,
     prompts: prompts(o.label),
   };
@@ -98,108 +113,121 @@ export const catalogPacks: IndustryPack[] = [
     id: "fintech",
     label: "Fintech & Payments",
     description: "Digital banking, payments, lending, and financial infrastructure.",
-    query: "fintech OR payments",
+    queries: ["fintech", "payments startup", "neobank"],
+    tcTag: "fintech",
   },
   {
     id: "cybersecurity",
     label: "Cybersecurity",
     description: "Security platforms, threat detection, identity, and compliance tooling.",
-    query: "cybersecurity OR security breach",
+    queries: ["cybersecurity", "data breach", "ransomware"],
+    tcTag: "cybersecurity",
   },
   {
     id: "devtools",
     label: "Developer Tools",
     description: "IDEs, CI/CD, observability, and the software development toolchain.",
-    query: "developer tools",
+    queries: ["developer tools", "CI/CD", "observability"],
   },
   {
     id: "ai-infra",
     label: "AI Infrastructure",
     description: "Foundation models, inference, vector databases, and the AI stack.",
-    query: "AI infrastructure OR LLM",
+    queries: ["LLM inference", "AI infrastructure", "vector database"],
+    tcTag: "artificial-intelligence",
   },
   {
     id: "data-analytics",
     label: "Data & Analytics",
     description: "Warehouses, BI, pipelines, and the modern data platform.",
-    query: "data analytics OR data warehouse",
+    queries: ["data warehouse", "business intelligence", "data pipeline"],
+    tcTag: "enterprise",
   },
   {
     id: "healthtech",
     label: "Health Tech",
     description: "Digital health, clinical software, and health data platforms.",
-    query: "healthtech OR digital health",
+    queries: ["digital health", "healthtech", "telemedicine"],
+    tcTag: "health",
   },
   {
     id: "martech",
     label: "Marketing Tech",
     description: "CRM, automation, analytics, and the marketing software stack.",
-    query: "marketing software OR martech",
+    queries: ["marketing software", "CRM platform", "marketing automation"],
+    tcTag: "marketing-tech",
   },
   {
     id: "hrtech",
     label: "HR Tech",
     description: "Hiring, payroll, people analytics, and workforce platforms.",
-    query: "HR software OR hiring software",
+    queries: ["HR software", "hiring software", "payroll software"],
   },
   {
     id: "proptech",
     label: "Prop Tech",
     description: "Real-estate software, property management, and construction tech.",
-    query: "proptech OR real estate software",
+    queries: ["proptech", "real estate software", "property management software"],
   },
   {
     id: "edtech",
     label: "Ed Tech",
     description: "Learning platforms, courseware, and education software.",
-    query: "edtech OR online learning",
+    queries: ["edtech", "online learning platform", "education software"],
+    tcTag: "edtech",
   },
   {
     id: "cloud",
     label: "Cloud & Infra",
     description: "Compute, storage, networking, and cloud platform providers.",
-    query: "cloud computing OR kubernetes",
+    queries: ["cloud computing", "kubernetes", "serverless"],
+    tcTag: "cloud-computing",
   },
   {
     id: "crypto",
     label: "Crypto & Web3",
     description: "Digital assets, exchanges, wallets, and blockchain infrastructure.",
-    query: "crypto OR blockchain",
+    queries: ["crypto exchange", "blockchain", "stablecoin"],
+    tcTag: "crypto",
   },
   {
     id: "gaming",
     label: "Gaming",
     description: "Studios, engines, distribution, and interactive entertainment.",
-    query: "gaming OR game studio",
+    queries: ["game studio", "game engine", "gaming platform"],
+    tcTag: "gaming",
   },
   {
     id: "robotics",
     label: "Robotics & Automation",
     description: "Industrial and service robotics, automation, and hardware.",
-    query: "robotics OR automation",
+    queries: ["robotics", "industrial automation", "autonomous robots"],
+    tcTag: "robotics",
   },
   {
     id: "biotech",
     label: "Biotech",
     description: "Drug discovery, lab software, and life-sciences platforms.",
-    query: "biotech OR drug discovery",
+    queries: ["biotech", "drug discovery", "genomics"],
+    tcTag: "biotech",
   },
   {
     id: "climate",
     label: "Climate Tech",
     description: "Energy, carbon, and sustainability technology.",
-    query: "climate tech OR clean energy",
+    queries: ["climate tech", "clean energy", "carbon capture"],
+    tcTag: "climate",
   },
   {
     id: "logistics",
     label: "Logistics & Supply Chain",
     description: "Freight, fulfillment, and supply-chain software.",
-    query: "logistics software OR supply chain",
+    queries: ["logistics software", "supply chain", "freight tech"],
   },
   {
     id: "legaltech",
     label: "Legal Tech",
     description: "Contract, compliance, and practice-management software.",
-    query: "legal tech OR contract software",
+    queries: ["legal tech", "contract software", "compliance software"],
   },
 ].map(makePack);
