@@ -1,5 +1,8 @@
 import { getIndustryPack, listIndustryPacks } from "@bellwether/industries";
-import { scrapeQueue, digestQueue, connection } from "./queues.js";
+import { scrapeQueue, digestQueue, statusQueue, connection } from "./queues.js";
+
+/** Daily ops email at 13:00 UTC (~morning US), after the 06:00/09:00 scrape+digest. */
+const STATUS_CRON = "0 13 * * *";
 
 /** Cron patterns by cadence. Scrape at 06:00, digest at 09:00 (after the
  *  scrape→extract fan-out settles). Daily is the default in prod so the
@@ -76,15 +79,26 @@ export async function scheduleWeekly(industryId: string): Promise<void> {
   await scheduleIndustry(industryId, "weekly");
 }
 
+/** Registers the daily status/health email (idempotent). */
+export async function scheduleStatus(): Promise<void> {
+  await statusQueue.upsertJobScheduler(
+    "status-daily",
+    { pattern: STATUS_CRON },
+    { name: "status" },
+  );
+}
+
 /**
- * Registers repeatable scrape+digest jobs for EVERY industry in the catalog —
- * the "let it cook" switch. Run once after deploy (against prod Redis); the
- * always-on worker then keeps all 20 verticals fresh on the chosen cadence.
+ * Registers repeatable scrape+digest jobs for EVERY industry in the catalog,
+ * plus the daily status email — the "let it cook" switch. Run once after deploy
+ * (against prod Redis); the always-on worker then keeps all 20 verticals fresh
+ * on the chosen cadence and emails a daily ops report.
  */
 export async function scheduleAll(cadence: Cadence = "daily"): Promise<number> {
   const packs = listIndustryPacks();
   let sources = 0;
   for (const pack of packs) sources += await scheduleIndustry(pack.id, cadence);
+  await scheduleStatus();
   return packs.length;
 }
 
@@ -108,13 +122,19 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     } else if (command === "schedule-all") {
       const cadence = asCadence(arg1);
       const n = await scheduleAll(cadence);
-      console.log(`Registered ${cadence} scrape + digest schedulers for all ${n} industries.`);
+      console.log(
+        `Registered ${cadence} scrape + digest schedulers for all ${n} industries + daily status email.`,
+      );
+    } else if (command === "schedule-status") {
+      await scheduleStatus();
+      console.log("Registered daily status-email scheduler.");
     } else {
       console.error(
         "Usage:\n  scheduler scrape <industryId> [sourceId...]\n" +
           "  scheduler digest <industryId> <startISO> <endISO>\n" +
           "  scheduler schedule <industryId> [daily|weekly]\n" +
-          "  scheduler schedule-all [daily|weekly]",
+          "  scheduler schedule-all [daily|weekly]\n" +
+          "  scheduler schedule-status",
       );
       process.exitCode = 1;
     }

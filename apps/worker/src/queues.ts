@@ -9,6 +9,8 @@ export const connection = new Redis(process.env.REDIS_URL ?? "redis://localhost:
 export const scrapeQueue = new Queue("scrape", { connection });
 export const extractQueue = new Queue("extract", { connection });
 export const digestQueue = new Queue("digest", { connection });
+/** Operations: a daily status/health email. Driven by a repeatable scheduler. */
+export const statusQueue = new Queue("status", { connection });
 
 export interface ScrapeJob {
   industryId: string;
