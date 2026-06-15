@@ -1,6 +1,9 @@
 import nodemailer from "nodemailer";
 import { sql } from "drizzle-orm";
 import { getDb } from "@bellwether/db";
+import { getIndustryPack } from "@bellwether/industries";
+
+const WEB_URL = process.env.WEB_PUBLIC_URL ?? "https://bellwether.up.railway.app";
 
 /**
  * Daily operations email: is Bellwether healthy and is the corpus growing?
@@ -21,9 +24,17 @@ export interface StatusReport {
   sourcesActive24h: number;
   sourcesTotal: number;
   sourcesDown: number;
-  topIndustries: { industryId: string; count: number }[];
+  topIndustries: { industryId: string; label: string; count: number }[];
   cronsHealthy: boolean;
 }
+
+const labelFor = (id: string): string => {
+  try {
+    return getIndustryPack(id).label;
+  } catch {
+    return id;
+  }
+};
 
 const num = (v: unknown): number => Number(v ?? 0);
 
@@ -79,7 +90,11 @@ export async function buildStatusReport(): Promise<StatusReport> {
     sourcesActive24h: num(srcAct?.n),
     sourcesTotal: num(srcTot?.n),
     sourcesDown: num(srcDown?.n),
-    topIndustries: top.map((r) => ({ industryId: String(r.i), count: num(r.n) })),
+    topIndustries: top.map((r) => ({
+      industryId: String(r.i),
+      label: labelFor(String(r.i)),
+      count: num(r.n),
+    })),
     cronsHealthy: num(raw?.n) > 0,
   };
 }
@@ -110,38 +125,128 @@ export function statusEmail(r: StatusReport): StatusEmail {
     "",
     "Most active industries (24h):",
     ...(r.topIndustries.length
-      ? r.topIndustries.map((t) => `  • ${t.industryId}: +${t.count}`)
+      ? r.topIndustries.map((t) => `  • ${t.label}: +${t.count}`)
       : ["  • (none)"]),
     "",
     `Source health: ${r.sourcesTotal - r.sourcesDown}/${r.sourcesTotal} healthy` +
       (r.sourcesDown ? ` — ${r.sourcesDown} failing` : ""),
     "",
+    `View the live dashboard: ${WEB_URL}`,
     `Generated ${r.generatedAt}`,
   ];
 
-  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const color = r.cronsHealthy ? "#10b981" : "#ef4444";
-  const html = [
-    `<h2 style="margin:0 0 4px">Bellwether daily</h2>`,
-    `<p style="font-weight:600;color:${color};margin:0 0 16px">${esc(heartLine)}</p>`,
-    `<h3 style="margin:0 0 4px">Signal progression</h3>`,
-    `<ul style="margin:0 0 16px">`,
-    `<li>Total signals: <b>${r.signalsTotal}</b></li>`,
-    `<li>New (24h): <b>${r.new24h.total}</b> — events ${r.new24h.events}, companies ${r.new24h.companies}, complaints ${r.new24h.complaints}</li>`,
-    `<li>New (7d): <b>${r.new7d}</b></li>`,
-    `</ul>`,
-    `<h3 style="margin:0 0 4px">Most active industries (24h)</h3>`,
-    `<ul style="margin:0 0 16px">` +
-      (r.topIndustries.map((t) => `<li>${esc(t.industryId)}: +${t.count}</li>`).join("") ||
-        "<li><em>none</em></li>") +
-      `</ul>`,
-    `<p style="color:#666">Source health: ${r.sourcesTotal - r.sourcesDown}/${r.sourcesTotal} healthy` +
-      (r.sourcesDown ? ` — ${r.sourcesDown} failing` : "") +
-      `</p>`,
-    `<p style="color:#999;font-size:12px">Generated ${esc(r.generatedAt)}</p>`,
-  ].join("\n");
+  return { subject, text: lines.join("\n"), html: statusHtml(r, heartLine) };
+}
 
-  return { subject, text: lines.join("\n"), html };
+// ---- branded HTML email (table-based + inline styles for client compatibility) ----
+
+const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const MONO = "ui-monospace,SFMono-Regular,Menlo,Consolas,monospace";
+const SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+
+function metricCell(label: string, value: number, last = false): string {
+  return (
+    `<td width="33.33%" valign="top" style="padding:0 ${last ? "0" : "8px"} 0 0;">` +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:12px;background:#ffffff;">` +
+    `<tr><td style="padding:13px 14px;">` +
+    `<div style="font-size:10px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:#94a3b8;">${esc(label)}</div>` +
+    `<div style="margin-top:6px;font-family:${MONO};font-size:23px;font-weight:700;color:#0f172a;">${value.toLocaleString()}</div>` +
+    `</td></tr></table></td>`
+  );
+}
+
+function kindChip(label: string, value: number, color: string): string {
+  return (
+    `<td valign="middle" style="padding-right:20px;white-space:nowrap;">` +
+    `<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${color};margin-right:7px;"></span>` +
+    `<span style="font-size:13px;color:#475569;">${esc(label)}</span> ` +
+    `<span style="font-family:${MONO};font-size:13px;font-weight:700;color:#0f172a;">${value}</span>` +
+    `</td>`
+  );
+}
+
+function industryRow(label: string, count: number, max: number): string {
+  const pct = Math.max(4, Math.round((count / max) * 100));
+  return (
+    `<tr>` +
+    `<td style="padding:5px 12px 5px 0;font-size:13px;color:#0f172a;white-space:nowrap;">${esc(label)}</td>` +
+    `<td width="100%" style="padding:5px 0;">` +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="background:#eef2ff;border-radius:999px;">` +
+    `<div style="width:${pct}%;height:8px;background:#4f46e5;border-radius:999px;font-size:0;line-height:0;">&nbsp;</div>` +
+    `</td></tr></table></td>` +
+    `<td align="right" style="padding:5px 0 5px 12px;font-family:${MONO};font-size:12px;font-weight:700;color:#4f46e5;white-space:nowrap;">+${count}</td>` +
+    `</tr>`
+  );
+}
+
+function statusHtml(r: StatusReport, heartLine: string): string {
+  const ok = r.cronsHealthy;
+  const accent = ok ? "#10b981" : "#ef4444";
+  const pillBg = ok ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.20)";
+  const healthy = r.sourcesTotal - r.sourcesDown;
+  const healthPct = r.sourcesTotal ? Math.round((healthy / r.sourcesTotal) * 100) : 100;
+  const maxInd = Math.max(1, ...r.topIndustries.map((t) => t.count));
+
+  const section = (title: string) =>
+    `<div style="font-size:11px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:#94a3b8;margin:26px 0 12px;">${title}</div>`;
+
+  return `<!doctype html><html><body style="margin:0;padding:0;background:#eef1f8;">
+<div style="display:none;max-height:0;overflow:hidden;color:#eef1f8;">${esc(heartLine)}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef1f8;font-family:${SANS};">
+<tr><td align="center" style="padding:28px 14px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;">
+
+  <tr><td style="background:#4338ca;background:linear-gradient(135deg,#312e81 0%,#4338ca 55%,#4f46e5 100%);border-radius:16px 16px 0 0;padding:20px 28px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td valign="middle" style="font-size:20px;font-weight:700;letter-spacing:-0.02em;color:#ffffff;">Bell<span style="color:#fbbf24;">wether</span></td>
+      <td valign="middle" align="right"><span style="display:inline-block;padding:5px 12px;border-radius:999px;background:${pillBg};color:#ffffff;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">Crons ${ok ? "OK" : "Stalled"}</span></td>
+    </tr></table>
+  </td></tr>
+
+  <tr><td style="background:#ffffff;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 16px 16px;padding:26px 28px 8px;">
+    <div style="font-size:12px;color:#94a3b8;letter-spacing:0.04em;text-transform:uppercase;font-weight:600;">Daily operations report</div>
+    <div style="margin:8px 0 22px;font-size:16px;font-weight:600;color:${accent};">${esc(heartLine)}</div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+      ${metricCell("Total signals", r.signalsTotal)}
+      ${metricCell("New · 24h", r.new24h.total)}
+      ${metricCell("New · 7d", r.new7d, true)}
+    </tr></table>
+
+    ${section("Today's new signals")}
+    <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+      ${kindChip("Events", r.new24h.events, "#4f46e5")}
+      ${kindChip("Companies", r.new24h.companies, "#0ea5e9")}
+      ${kindChip("Complaints", r.new24h.complaints, "#ef4444")}
+    </tr></table>
+
+    ${section("Most active industries · 24h")}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      ${
+        r.topIndustries.length
+          ? r.topIndustries.map((t) => industryRow(t.label, t.count, maxInd)).join("")
+          : `<tr><td style="font-size:13px;color:#94a3b8;">No new signals yet.</td></tr>`
+      }
+    </table>
+
+    ${section("Source health")}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td width="100%" style="padding-right:12px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="background:#fee2e2;border-radius:999px;">
+        <div style="width:${healthPct}%;height:8px;background:#10b981;border-radius:999px;font-size:0;line-height:0;">&nbsp;</div>
+      </td></tr></table></td>
+      <td align="right" style="font-size:12px;color:#475569;white-space:nowrap;"><b>${healthy}/${r.sourcesTotal}</b> healthy${r.sourcesDown ? ` · <span style="color:#ef4444;">${r.sourcesDown} failing</span>` : ""}</td>
+    </tr></table>
+
+    <div style="margin:28px 0 8px;text-align:center;">
+      <a href="${WEB_URL}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:11px 22px;border-radius:10px;">Open the dashboard &rarr;</a>
+    </div>
+  </td></tr>
+
+  <tr><td style="padding:16px 28px;text-align:center;">
+    <div style="font-size:11px;color:#94a3b8;">Every figure traces to a cited source · generated ${esc(r.generatedAt)}</div>
+  </td></tr>
+
+</table></td></tr></table></body></html>`;
 }
 
 /** Build + email the daily status report. No-op (logs) if SMTP isn't configured. */
