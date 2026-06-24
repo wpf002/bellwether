@@ -61,17 +61,8 @@ export const saasPack: IndustryPack = {
       id: "saas-hackernews",
       label: "Hacker News (front page)",
       kind: "rss",
-      adapter: "rss-news",
-      url: "https://hnrss.org/frontpage",
-      mayContainPersonalData: false,
-      extractAs: ["market_event"],
-    },
-    {
-      id: "saas-theregister",
-      label: "The Register",
-      kind: "rss",
-      adapter: "rss-news",
-      url: "https://www.theregister.com/headlines.atom",
+      adapter: "hn-algolia",
+      url: "https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=30",
       mayContainPersonalData: false,
       extractAs: ["market_event"],
     },
@@ -200,15 +191,13 @@ export const saasPack: IndustryPack = {
     },
     // --- Public community sentiment → buyer complaints/praise ---
     // Reddit and Lobsters both disallow our bot in robots.txt (verified), and the
-    // base adapter fails closed. hnrss.org (a Hacker News RSS service) permits
-    // us, so HN discussion is the Phase 1 sentiment source. Stronger buyer-review
-    // sources (G2/Capterra) need a Phase 2 HTML adapter + TOS review.
+    // base adapter fails closed. HN Algolia API is the sentiment source.
     {
       id: "saas-hn-discussion",
       label: "Hacker News — SaaS discussion",
       kind: "social_public",
-      adapter: "rss-news",
-      url: "https://hnrss.org/newest?q=SaaS&points=10",
+      adapter: "hn-algolia",
+      url: "https://hn.algolia.com/api/v1/search_by_date?query=SaaS&tags=story&numericFilters=points%3E%3D10&hitsPerPage=20",
       mayContainPersonalData: true,
       extractAs: ["sentiment_theme"],
     },

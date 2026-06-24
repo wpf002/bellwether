@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import type { Database } from "@bellwether/db";
 import { schema } from "@bellwether/db";
 import type { IndustryPack } from "@bellwether/core";
@@ -34,6 +35,14 @@ export async function ensurePackPersisted(db: Database, pack: IndustryPack): Pro
           url: s.url,
         })),
       )
-      .onConflictDoNothing();
+      .onConflictDoUpdate({
+        target: schema.sources.id,
+        set: {
+          label: sql`excluded.label`,
+          url: sql`excluded.url`,
+          adapter: sql`excluded.adapter`,
+          kind: sql`excluded.kind`,
+        },
+      });
   }
 }

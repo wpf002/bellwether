@@ -1,5 +1,6 @@
 import { RssNewsAdapter } from "./adapters/rss-news.js";
 import { HtmlPageAdapter } from "./adapters/html-page.js";
+import { HnAlgoliaAdapter } from "./adapters/hn-algolia.js";
 import type { SourceAdapter } from "./source-adapter.js";
 
 export { SourceAdapter } from "./source-adapter.js";
@@ -7,6 +8,7 @@ export type { FetchContext } from "./source-adapter.js";
 export { isAllowed } from "./robots.js";
 export { RssNewsAdapter, parseRssItems } from "./adapters/rss-news.js";
 export { HtmlPageAdapter, extractReadableText } from "./adapters/html-page.js";
+export { HnAlgoliaAdapter } from "./adapters/hn-algolia.js";
 export { fetchTextWithRetry, ScrapeError } from "./fetch.js";
 export type { RetryConfig } from "./fetch.js";
 
@@ -14,6 +16,7 @@ export type { RetryConfig } from "./fetch.js";
 export const adapterRegistry: Record<string, SourceAdapter> = {
   "rss-news": new RssNewsAdapter(),
   "html-page": new HtmlPageAdapter(),
+  "hn-algolia": new HnAlgoliaAdapter(),
 };
 
 export function getAdapter(id: string): SourceAdapter {

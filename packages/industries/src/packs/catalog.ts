@@ -75,8 +75,8 @@ function makePack(o: {
     id: `${o.id}-hn${i + 1}`,
     label: `Hacker News — "${q}"`,
     kind: "rss",
-    adapter: "rss-news",
-    url: `https://hnrss.org/newest?q=${encodeURIComponent(q)}&points=10`,
+    adapter: "hn-algolia",
+    url: `https://hn.algolia.com/api/v1/search_by_date?query=${encodeURIComponent(q)}&tags=story&numericFilters=points%3E%3D10&hitsPerPage=20`,
     mayContainPersonalData: false,
     extractAs: ["market_event", "company"],
   }));
@@ -113,8 +113,8 @@ function makePack(o: {
     id: `${o.id}-discussion`,
     label: `Hacker News — ${o.label} discussion`,
     kind: "social_public",
-    adapter: "rss-news",
-    url: `https://hnrss.org/newest?q=${encodeURIComponent(o.queries[0] ?? o.label)}&points=2`,
+    adapter: "hn-algolia",
+    url: `https://hn.algolia.com/api/v1/search_by_date?query=${encodeURIComponent(o.queries[0] ?? o.label)}&tags=story&numericFilters=points%3E%3D2&hitsPerPage=20`,
     mayContainPersonalData: true,
     extractAs: ["sentiment_theme"],
   });
