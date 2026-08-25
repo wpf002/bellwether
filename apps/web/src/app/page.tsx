@@ -14,7 +14,7 @@ const ACCENTS = [
 ];
 
 export default async function Home() {
-  const industries = await api.industries();
+  const industries = (await api.industries()).sort((a, b) => a.label.localeCompare(b.label));
 
   return (
     <main>
