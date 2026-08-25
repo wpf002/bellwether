@@ -34,3 +34,16 @@ export {
   platformMetrics,
 } from "./accounts.js";
 export type { AuthContext, SignupResult, PlatformMetrics } from "./accounts.js";
+export {
+  listMonitors,
+  getMonitor,
+  createMonitor,
+  updateMonitor,
+  deleteMonitor,
+  addCompetitor,
+  removeCompetitor,
+  addMonitorSource,
+  removeMonitorSource,
+  monitorSignals,
+} from "./monitors.js";
+export type { MonitorRow, CompetitorRow, MonitorSourceRow, MonitorDetail } from "./monitors.js";

@@ -21,6 +21,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <Link href="/" className="hidden hover:text-white sm:inline">
                 Industries
               </Link>
+              <Link href="/monitor" className="hidden hover:text-white sm:inline">
+                Monitors
+              </Link>
               <Link href="/watchlist" className="hidden hover:text-white sm:inline">
                 Watchlist
               </Link>

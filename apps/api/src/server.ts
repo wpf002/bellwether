@@ -7,6 +7,7 @@ import { dashboardRoutes } from "./routes/dashboard.js";
 import { qualityRoutes } from "./routes/quality.js";
 import { accountRoutes } from "./routes/accounts.js";
 import { moduleRoutes } from "./routes/modules.js";
+import { monitorRoutes } from "./routes/monitors.js";
 
 export async function buildServer() {
   const app = Fastify({
@@ -22,6 +23,7 @@ export async function buildServer() {
   await app.register(qualityRoutes);
   await app.register(accountRoutes);
   await app.register(moduleRoutes);
+  await app.register(monitorRoutes);
 
   return app;
 }

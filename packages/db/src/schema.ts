@@ -194,6 +194,65 @@ export const subscriptions = pgTable(
   (t) => ({ byOrg: uniqueIndex("subscriptions_org_industry_idx").on(t.orgId, t.industryId) }),
 );
 
+// ---- Phase 8: Monitor Mode — single-entity intelligence ----
+// A "monitor" is a company the user wants hyper-focused signals on: custom
+// competitor designations + custom signal sources (publications, keywords,
+// influencer feeds) on top of signals from a base industry pack.
+
+export const monitors = pgTable(
+  "monitors",
+  {
+    id: text("id").primaryKey(),
+    orgId: text("org_id").references(() => orgs.id, { onDelete: "cascade" }),
+    name: text("name").notNull(), // company being monitored
+    domain: text("domain"), // e.g. "acme.com" — for logo resolution
+    description: text("description"),
+    industryId: text("industry_id").references(() => industries.id), // base pack
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({ byOrg: index("monitors_org_idx").on(t.orgId) }),
+);
+
+/** Designated competitors for a monitor — scopes dashboard views and signal filtering. */
+export const monitorCompetitors = pgTable(
+  "monitor_competitors",
+  {
+    id: text("id").primaryKey(),
+    monitorId: text("monitor_id")
+      .notNull()
+      .references(() => monitors.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    domain: text("domain"),
+  },
+  (t) => ({ byMonitor: index("monitor_competitors_monitor_idx").on(t.monitorId) }),
+);
+
+/**
+ * User-defined signal sources for a monitor: trade publications, keyword
+ * searches, influencer/newsletter feeds. These get scraped on the same daily
+ * cadence as industry sources and feed the existing extract pipeline.
+ *
+ * When a source row is created here, the API also inserts a row into the
+ * `sources` table (id = "ms-{monitorId}-{slug}") so the worker's scrape
+ * processor can handle it without any code changes.
+ */
+export const monitorSources = pgTable(
+  "monitor_sources",
+  {
+    id: text("id").primaryKey(),
+    monitorId: text("monitor_id")
+      .notNull()
+      .references(() => monitors.id, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    kind: text("kind").notNull(), // 'rss' | 'social_public' | 'html' | 'keyword'
+    adapter: text("adapter").notNull(), // 'rss-news' | 'hn-algolia' | 'html-page'
+    url: text("url").notNull(),
+    extractAs: jsonb("extract_as").notNull().default(["market_event", "company"]),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({ byMonitor: index("monitor_sources_monitor_idx").on(t.monitorId) }),
+);
+
 /** Audit log of privileged actions, for accountability. */
 export const auditLog = pgTable(
   "audit_log",

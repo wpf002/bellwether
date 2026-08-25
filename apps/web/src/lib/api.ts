@@ -71,6 +71,49 @@ export interface Digest {
   citations: Record<string, string | null>;
 }
 
+// ---- Monitor Mode types ----
+
+export interface Monitor {
+  id: string;
+  orgId: string | null;
+  name: string;
+  domain: string | null;
+  description: string | null;
+  industryId: string | null;
+  createdAt: string;
+}
+
+export interface MonitorCompetitor {
+  id: string;
+  monitorId: string;
+  name: string;
+  domain: string | null;
+}
+
+export interface MonitorSource {
+  id: string;
+  monitorId: string;
+  label: string;
+  kind: string;
+  adapter: string;
+  url: string;
+  extractAs: string[];
+  createdAt: string;
+}
+
+export interface MonitorDetail extends Monitor {
+  competitors: MonitorCompetitor[];
+  sources: MonitorSource[];
+}
+
+export interface MonitorSignal {
+  id: string;
+  industry_id: string;
+  entity_kind: string;
+  payload: Record<string, unknown>;
+  created_at: string;
+}
+
 async function get<T>(path: string, fallback: T): Promise<T> {
   try {
     const res = await fetch(`${API_BASE}${path}`, { cache: "no-store" });
@@ -79,6 +122,23 @@ async function get<T>(path: string, fallback: T): Promise<T> {
   } catch {
     return fallback;
   }
+}
+
+async function post<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "request failed" }));
+    throw new Error((err as { error?: string }).error ?? "request failed");
+  }
+  return (await res.json()) as T;
+}
+
+async function del(path: string): Promise<void> {
+  await fetch(`${API_BASE}${path}`, { method: "DELETE" });
 }
 
 export const api = {
@@ -92,4 +152,25 @@ export const api = {
   digest: (id: string, days = 7) =>
     get<Digest | null>(`/industries/${id}/digest?days=${days}`, null),
   trends: (id: string, days = 14) => get<TrendPoint[]>(`/industries/${id}/trends?days=${days}`, []),
+
+  // Monitor Mode
+  monitors: () => get<Monitor[]>("/monitors", []),
+  monitor: (id: string) => get<MonitorDetail | null>(`/monitors/${id}`, null),
+  monitorSignals: (id: string, limit = 50, kind?: string) =>
+    get<{ signals: MonitorSignal[]; total: number; monitor: { id: string; name: string } }>(
+      `/monitors/${id}/signals?limit=${limit}${kind ? `&kind=${kind}` : ""}`,
+      { signals: [], total: 0, monitor: { id, name: "" } },
+    ),
+  createMonitor: (body: { name: string; domain?: string; description?: string; industryId?: string }) =>
+    post<Monitor>("/monitors", body),
+  addCompetitor: (monitorId: string, body: { name: string; domain?: string }) =>
+    post<MonitorCompetitor>(`/monitors/${monitorId}/competitors`, body),
+  removeCompetitor: (monitorId: string, cId: string) =>
+    del(`/monitors/${monitorId}/competitors/${cId}`),
+  addMonitorSource: (
+    monitorId: string,
+    body: { label: string; kind: string; adapter: string; url: string; extractAs?: string[] },
+  ) => post<MonitorSource>(`/monitors/${monitorId}/sources`, body),
+  removeMonitorSource: (monitorId: string, sId: string) =>
+    del(`/monitors/${monitorId}/sources/${sId}`),
 };
